@@ -1,0 +1,52 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public", "training_management", "auth"]
+}
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  name      String
+  roleId    Int
+  role      Allcode   @relation(fields: [roleId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  profile   Profile?
+
+  @@schema("auth")
+}
+
+model Profile {
+  id        Int      @id @default(autoincrement())
+  phone     String?
+  address   String?
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@schema("auth")
+}
+
+model Allcode {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  type      String
+  users     User[]
+
+  @@schema("training_management")
+}
+
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String
+  color     String
+
+  @@schema("training_management")
+} 

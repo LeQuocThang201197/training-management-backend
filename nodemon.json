@@ -1,0 +1,4 @@
+{
+  "exec": "node --experimental-modules src/app.js",
+  "ext": "js json"
+}
