@@ -1,18 +1,18 @@
 import express from "express";
 import authRoutes from "./auth.routes.js";
 import tagRoutes from "./tag.routes.js";
-import { verifyToken } from "../middlewares/auth.middleware.js";
+import sportRoutes from "./sport.routes.js";
+import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-// Mount auth routes
+// Mount routes
 router.use("/auth", authRoutes);
-
-// Mount tag routes
-router.use("/tags", verifyToken, tagRoutes);
+router.use("/tags", isAuthenticated, tagRoutes);
+router.use("/sports", isAuthenticated, sportRoutes);
 
 // Protected routes
-router.get("/profile", verifyToken, (req, res) => {
+router.get("/profile", isAuthenticated, (req, res) => {
   res.json({
     success: true,
     data: req.user,
