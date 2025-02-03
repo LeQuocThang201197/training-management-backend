@@ -2,7 +2,7 @@ import { prisma } from "../config/prisma.js";
 
 export const createSport = async (req, res) => {
   try {
-    const { name, description, image, rules } = req.body;
+    const { name } = req.body;
 
     // Kiểm tra sport đã tồn tại
     const existingSport = await prisma.sport.findUnique({
@@ -17,7 +17,7 @@ export const createSport = async (req, res) => {
     }
 
     const newSport = await prisma.sport.create({
-      data: { name, description, image, rules },
+      data: { name },
     });
 
     res.status(201).json({
@@ -48,11 +48,8 @@ export const getSports = async (req, res) => {
       select: {
         id: true,
         name: true,
-        description: true,
-        image: true,
         createdAt: true,
         updatedAt: true,
-        // Không select trường rules
       },
     });
 
@@ -97,7 +94,7 @@ export const getSportById = async (req, res) => {
 export const updateSport = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, image, rules } = req.body;
+    const { name } = req.body;
 
     // Kiểm tra tên mới có trùng với sport khác không
     const existingSport = await prisma.sport.findFirst({
@@ -118,7 +115,7 @@ export const updateSport = async (req, res) => {
 
     const updatedSport = await prisma.sport.update({
       where: { id: parseInt(id) },
-      data: { name, description, image, rules },
+      data: { name },
     });
 
     res.json({
