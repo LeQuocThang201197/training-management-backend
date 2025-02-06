@@ -56,6 +56,45 @@ model Sport {
   name        String    @unique
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  teams       Team[]
 
   @@schema("training_management")
-} 
+}
+
+model Team {
+  id          Int             @id @default(autoincrement())
+  sportId     Int
+  sport       Sport           @relation(fields: [sportId], references: [id])
+  type        TeamType        
+  room        ManagementRoom  
+  gender      TeamGender      @default(MIXED)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([sportId, type, gender])
+  @@schema("training_management")
+}
+
+enum TeamGender {
+  MALE    // Nam
+  FEMALE  // Nữ
+  MIXED   // Cả nam và nữ
+
+  @@schema("training_management")
+}
+
+enum TeamType {
+  JUNIOR      // Trẻ
+  ADULT       // Tuyển
+  DISABILITY  // Khuyết tật
+
+  @@schema("training_management")
+}
+
+enum ManagementRoom {
+  ROOM_1  // Vụ 1
+  ROOM_2  // Vụ 2
+  ROOM_3  // Thể thao cho mọi người
+
+  @@schema("training_management")
+}

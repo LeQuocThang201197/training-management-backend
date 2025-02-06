@@ -2,6 +2,7 @@ import express from "express";
 import authRoutes from "./auth.routes.js";
 import tagRoutes from "./tag.routes.js";
 import sportRoutes from "./sport.routes.js";
+import teamRoutes from "./team.routes.js";
 import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
@@ -10,6 +11,7 @@ const router = express.Router();
 router.use("/auth", authRoutes);
 router.use("/tags", isAuthenticated, tagRoutes);
 router.use("/sports", isAuthenticated, sportRoutes);
+router.use("/teams", isAuthenticated, teamRoutes);
 
 // Protected routes
 router.get("/profile", isAuthenticated, (req, res) => {
