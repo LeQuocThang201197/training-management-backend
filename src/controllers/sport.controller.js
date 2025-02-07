@@ -48,8 +48,9 @@ export const getSports = async (req, res) => {
       select: {
         id: true,
         name: true,
-        createdAt: true,
-        updatedAt: true,
+      },
+      orderBy: {
+        name: "asc",
       },
     });
 

@@ -46,7 +46,6 @@ model Allcode {
 model Tag {
   id        Int      @id @default(autoincrement())
   name      String   @unique
-  color     String
 
   @@schema("training_management")
 }
