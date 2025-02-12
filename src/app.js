@@ -6,6 +6,7 @@ import { connectDB } from "./config/prisma.js";
 import routes from "./routes/index.js";
 import session from "express-session";
 import passport from "./config/passport.js";
+import path from "path";
 
 // Load env vars
 dotenv.config();
@@ -46,6 +47,9 @@ app.use(
 // Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Thêm middleware để serve static files
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Test route
 app.get("/", (req, res) => {

@@ -40,6 +40,7 @@ model Allcode {
   type      String
   users     User[]
 
+  @@unique([value, type])
   @@schema("training_management")
 }
 
@@ -94,6 +95,23 @@ enum ManagementRoom {
   ROOM_1  // Vụ 1
   ROOM_2  // Vụ 2
   ROOM_3  // Thể thao cho mọi người
+
+  @@schema("training_management")
+}
+
+model Paper {
+  id            Int      @id @default(autoincrement())
+  number        Int
+  code          String
+  publisher     String
+  type          String
+  content       String
+  related_year  Int
+  date          DateTime
+  file_name     String?  // Tên file gốc
+  file_path     String?  // Đường dẫn lưu file
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@schema("training_management")
 }
