@@ -19,6 +19,7 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   profile   Profile?
+  recruitments Recruitment[]
 
   @@schema("auth")
 }
@@ -112,6 +113,21 @@ model Paper {
   file_path     String?  // Đường dẫn lưu file
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@schema("training_management")
+}
+
+model Recruitment {
+  id        Int      @id @default(autoincrement())
+  name      String
+  location  String
+  startDate DateTime
+  endDate   DateTime
+  note      String
+  submitter_id  Int
+  submitter   User @relation(fields: [submitter_id], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@schema("training_management")
 }
