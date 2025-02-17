@@ -19,7 +19,8 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   profile   Profile?
-  recruitments Recruitment[]
+  concentrations Concentration[]
+  trainings    Training[]
 
   @@schema("auth")
 }
@@ -63,14 +64,15 @@ model Sport {
 }
 
 model Team {
-  id          Int             @id @default(autoincrement())
-  sportId     Int
-  sport       Sport           @relation(fields: [sportId], references: [id])
-  type        TeamType        
-  room        ManagementRoom  
-  gender      TeamGender      @default(MIXED)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id            Int             @id @default(autoincrement())
+  sportId       Int
+  sport         Sport           @relation(fields: [sportId], references: [id])
+  type          TeamType        
+  room          ManagementRoom  
+  gender        TeamGender      @default(MIXED)
+  concentrations Concentration[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@unique([sportId, type, gender])
   @@schema("training_management")
@@ -117,17 +119,35 @@ model Paper {
   @@schema("training_management")
 }
 
-model Recruitment {
-  id        Int      @id @default(autoincrement())
-  name      String
-  location  String
-  startDate DateTime
-  endDate   DateTime
-  note      String
-  submitter_id  Int
-  submitter   User @relation(fields: [submitter_id], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Concentration {
+  id            Int       @id @default(autoincrement())
+  teamId        Int      // Đội tập trung
+  team          Team     @relation(fields: [teamId], references: [id])
+  location      String    // Địa điểm tập trung
+  startDate     DateTime  // Ngày bắt đầu tập trung
+  endDate       DateTime  // Ngày kết thúc tập trung
+  note          String    // Ghi chú
+  submitter_id  Int       // Người tạo thông tin
+  submitter     User      @relation(fields: [submitter_id], references: [id])
+  trainings     Training[] // Các đợt tập huấn trong thời gian tập trung
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@schema("training_management")
+}
+
+model Training {
+  id              Int           @id @default(autoincrement())
+  location        String        // Địa điểm tập huấn
+  startDate       DateTime      // Ngày bắt đầu tập huấn
+  endDate         DateTime      // Ngày kết thúc tập huấn
+  note            String        // Ghi chú
+  concentration_id Int          // Thuộc đợt tập trung nào
+  concentration   Concentration @relation(fields: [concentration_id], references: [id])
+  submitter_id    Int          // Người tạo thông tin
+  submitter       User         @relation(fields: [submitter_id], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@schema("training_management")
 }

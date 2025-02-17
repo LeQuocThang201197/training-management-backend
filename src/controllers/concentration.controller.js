@@ -1,13 +1,13 @@
 import { prisma } from "../config/prisma.js";
 
-// Tạo tuyển dụng mới
-export const createRecruitment = async (req, res) => {
+// Tạo đợt tập trung mới
+export const createConcentration = async (req, res) => {
   try {
-    const { name, location, startDate, endDate, note } = req.body;
+    const { teamId, location, startDate, endDate, note } = req.body;
 
-    const newRecruitment = await prisma.recruitment.create({
+    const newConcentration = await prisma.concentration.create({
       data: {
-        name,
+        teamId: parseInt(teamId),
         location,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
@@ -15,6 +15,11 @@ export const createRecruitment = async (req, res) => {
         submitter_id: req.user.id, // Lấy id của user đang đăng nhập
       },
       include: {
+        team: {
+          include: {
+            sport: true,
+          },
+        },
         submitter: {
           select: {
             id: true,
@@ -27,8 +32,8 @@ export const createRecruitment = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Tạo thông tin tuyển dụng thành công",
-      data: newRecruitment,
+      message: "Tạo đợt tập trung thành công",
+      data: newConcentration,
     });
   } catch (error) {
     res.status(500).json({
@@ -39,11 +44,16 @@ export const createRecruitment = async (req, res) => {
   }
 };
 
-// Lấy danh sách tuyển dụng
-export const getRecruitments = async (req, res) => {
+// Lấy danh sách đợt tập trung
+export const getConcentrations = async (req, res) => {
   try {
-    const recruitments = await prisma.recruitment.findMany({
+    const concentrations = await prisma.concentration.findMany({
       include: {
+        team: {
+          include: {
+            sport: true,
+          },
+        },
         submitter: {
           select: {
             id: true,
@@ -51,6 +61,7 @@ export const getRecruitments = async (req, res) => {
             email: true,
           },
         },
+        trainings: true, // Include các đợt tập huấn
       },
       orderBy: {
         startDate: "desc",
@@ -59,7 +70,7 @@ export const getRecruitments = async (req, res) => {
 
     res.json({
       success: true,
-      data: recruitments,
+      data: concentrations,
     });
   } catch (error) {
     res.status(500).json({
@@ -70,13 +81,18 @@ export const getRecruitments = async (req, res) => {
   }
 };
 
-// Lấy chi tiết tuyển dụng
-export const getRecruitmentById = async (req, res) => {
+// Lấy chi tiết đợt tập trung
+export const getConcentrationById = async (req, res) => {
   try {
     const { id } = req.params;
-    const recruitment = await prisma.recruitment.findUnique({
+    const concentration = await prisma.concentration.findUnique({
       where: { id: parseInt(id) },
       include: {
+        team: {
+          include: {
+            sport: true,
+          },
+        },
         submitter: {
           select: {
             id: true,
@@ -84,19 +100,30 @@ export const getRecruitmentById = async (req, res) => {
             email: true,
           },
         },
+        trainings: {
+          include: {
+            submitter: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    if (!recruitment) {
+    if (!concentration) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy thông tin tuyển dụng",
+        message: "Không tìm thấy đợt tập trung",
       });
     }
 
     res.json({
       success: true,
-      data: recruitment,
+      data: concentration,
     });
   } catch (error) {
     res.status(500).json({
@@ -107,41 +134,46 @@ export const getRecruitmentById = async (req, res) => {
   }
 };
 
-// Cập nhật tuyển dụng
-export const updateRecruitment = async (req, res) => {
+// Cập nhật đợt tập trung
+export const updateConcentration = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, location, startDate, endDate, note } = req.body;
+    const { teamId, location, startDate, endDate, note } = req.body;
 
     // Kiểm tra quyền (chỉ người tạo mới được sửa)
-    const recruitment = await prisma.recruitment.findUnique({
+    const concentration = await prisma.concentration.findUnique({
       where: { id: parseInt(id) },
     });
 
-    if (!recruitment) {
+    if (!concentration) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy thông tin tuyển dụng",
+        message: "Không tìm thấy đợt tập trung",
       });
     }
 
-    if (recruitment.submitter_id !== req.user.id) {
+    if (concentration.submitter_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: "Không có quyền sửa thông tin này",
       });
     }
 
-    const updatedRecruitment = await prisma.recruitment.update({
+    const updatedConcentration = await prisma.concentration.update({
       where: { id: parseInt(id) },
       data: {
-        name,
+        teamId: parseInt(teamId),
         location,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         note,
       },
       include: {
+        team: {
+          include: {
+            sport: true,
+          },
+        },
         submitter: {
           select: {
             id: true,
@@ -154,8 +186,8 @@ export const updateRecruitment = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Cập nhật thông tin tuyển dụng thành công",
-      data: updatedRecruitment,
+      message: "Cập nhật đợt tập trung thành công",
+      data: updatedConcentration,
     });
   } catch (error) {
     res.status(500).json({
@@ -166,37 +198,43 @@ export const updateRecruitment = async (req, res) => {
   }
 };
 
-// Xóa tuyển dụng
-export const deleteRecruitment = async (req, res) => {
+// Xóa đợt tập trung
+export const deleteConcentration = async (req, res) => {
   try {
     const { id } = req.params;
 
     // Kiểm tra quyền (chỉ người tạo mới được xóa)
-    const recruitment = await prisma.recruitment.findUnique({
+    const concentration = await prisma.concentration.findUnique({
       where: { id: parseInt(id) },
     });
 
-    if (!recruitment) {
+    if (!concentration) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy thông tin tuyển dụng",
+        message: "Không tìm thấy đợt tập trung",
       });
     }
 
-    if (recruitment.submitter_id !== req.user.id) {
+    if (concentration.submitter_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: "Không có quyền xóa thông tin này",
       });
     }
 
-    await prisma.recruitment.delete({
+    // Xóa tất cả các đợt tập huấn liên quan trước
+    await prisma.training.deleteMany({
+      where: { concentration_id: parseInt(id) },
+    });
+
+    // Sau đó xóa đợt tập trung
+    await prisma.concentration.delete({
       where: { id: parseInt(id) },
     });
 
     res.json({
       success: true,
-      message: "Xóa thông tin tuyển dụng thành công",
+      message: "Xóa đợt tập trung thành công",
     });
   } catch (error) {
     res.status(500).json({
