@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { formatTeamInfo } from "../constants/index.js";
 
 // Tạo đợt tập trung mới
 export const createConcentration = async (req, res) => {
@@ -61,16 +62,21 @@ export const getConcentrations = async (req, res) => {
             email: true,
           },
         },
-        trainings: true, // Include các đợt tập huấn
+        trainings: true,
       },
       orderBy: {
         startDate: "desc",
       },
     });
 
+    const formattedConcentrations = concentrations.map((concentration) => ({
+      ...concentration,
+      team: formatTeamInfo(concentration.team),
+    }));
+
     res.json({
       success: true,
-      data: concentrations,
+      data: formattedConcentrations,
     });
   } catch (error) {
     res.status(500).json({
@@ -121,9 +127,15 @@ export const getConcentrationById = async (req, res) => {
       });
     }
 
+    // Format response
+    const formattedConcentration = {
+      ...concentration,
+      team: formatTeamInfo(concentration.team),
+    };
+
     res.json({
       success: true,
-      data: concentration,
+      data: formattedConcentration,
     });
   } catch (error) {
     res.status(500).json({

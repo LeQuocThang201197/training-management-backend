@@ -1,5 +1,6 @@
 import pkg from "@prisma/client";
 import { prisma } from "../config/prisma.js";
+import { TEAM_LABELS, formatTeamInfo } from "../constants/index.js";
 
 // Lấy các enum từ PrismaClient
 const { TeamType, ManagementRoom, TeamGender } = pkg;
@@ -7,38 +8,22 @@ const { TeamType, ManagementRoom, TeamGender } = pkg;
 // Lấy danh sách enum values
 export const getEnumValues = async (req, res) => {
   try {
-    const typeLabels = {
-      JUNIOR: "Trẻ",
-      ADULT: "Tuyển",
-      DISABILITY: "Người khuyết tật",
-    };
-
-    const roomLabels = {
-      ROOM_1: "Vụ 1",
-      ROOM_2: "Vụ 2",
-      ROOM_3: "Thể thao cho mọi người",
-    };
-
-    const genderLabels = {
-      MALE: "Nam",
-      FEMALE: "Nữ",
-      MIXED: "Cả nam và nữ",
-    };
-
-    const types = Object.values(TeamType).map((value) => ({
+    const types = Object.entries(TEAM_LABELS.type).map(([value, label]) => ({
       value,
-      label: typeLabels[value],
+      label,
     }));
 
-    const rooms = Object.values(ManagementRoom).map((value) => ({
+    const rooms = Object.entries(TEAM_LABELS.room).map(([value, label]) => ({
       value,
-      label: roomLabels[value],
+      label,
     }));
 
-    const genders = Object.values(TeamGender).map((value) => ({
-      value,
-      label: genderLabels[value],
-    }));
+    const genders = Object.entries(TEAM_LABELS.gender).map(
+      ([value, label]) => ({
+        value,
+        label,
+      })
+    );
 
     res.json({
       success: true,
@@ -104,42 +89,7 @@ export const getTeams = async (req, res) => {
       },
     });
 
-    // Map các giá trị enum sang tiếng Việt
-    const typeLabels = {
-      JUNIOR: "Trẻ",
-      ADULT: "Tuyển",
-      DISABILITY: "Người khuyết tật",
-    };
-
-    const roomLabels = {
-      ROOM_1: "Vụ 1",
-      ROOM_2: "Vụ 2",
-      ROOM_3: "Thể thao cho mọi người",
-    };
-
-    const genderLabels = {
-      MALE: "Nam",
-      FEMALE: "Nữ",
-      MIXED: "Cả nam và nữ",
-    };
-
-    // Transform data trước khi trả về
-    const transformedTeams = teams.map((team) => ({
-      id: team.id,
-      sport: team.sport.name,
-      type: typeLabels[team.type],
-      room: roomLabels[team.room],
-      gender: genderLabels[team.gender],
-      createdAt: team.createdAt,
-      updatedAt: team.updatedAt,
-      // Giữ lại raw data cho frontend nếu cần
-      rawData: {
-        sportId: team.sportId,
-        type: team.type,
-        room: team.room,
-        gender: team.gender,
-      },
-    }));
+    const transformedTeams = teams.map(formatTeamInfo);
 
     res.json({
       success: true,
