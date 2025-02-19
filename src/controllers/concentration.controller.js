@@ -121,7 +121,7 @@ export const getConcentrations = async (req, res) => {
   }
 };
 
-// Lấy chi tiết đợt tập trung
+// Lấy chi tiết đợt tập trung (không bao gồm papers)
 export const getConcentrationById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -149,11 +149,6 @@ export const getConcentrationById = async (req, res) => {
                 email: true,
               },
             },
-          },
-        },
-        papers: {
-          include: {
-            paper: true,
           },
         },
       },
