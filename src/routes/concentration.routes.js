@@ -5,6 +5,11 @@ import {
   getConcentrationById,
   updateConcentration,
   deleteConcentration,
+  getPapersByConcentration,
+  attachPaperToConcentration,
+  detachPaperFromConcentration,
+  updateConcentrationNote,
+  deleteConcentrationNote,
 } from "../controllers/concentration.controller.js";
 
 const router = express.Router();
@@ -14,5 +19,10 @@ router.get("/", getConcentrations);
 router.get("/:id", getConcentrationById);
 router.put("/:id", updateConcentration);
 router.delete("/:id", deleteConcentration);
+router.get("/:id/papers", getPapersByConcentration);
+router.post("/:id/papers", attachPaperToConcentration);
+router.delete("/:id/papers/:paperId", detachPaperFromConcentration);
+router.put("/:id/note", updateConcentrationNote);
+router.delete("/:id/note", deleteConcentrationNote);
 
 export default router;
