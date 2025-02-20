@@ -61,20 +61,10 @@ export const createConcentration = async (req, res) => {
             email: true,
           },
         },
-        trainings: {
-          include: {
-            submitter: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
       },
     });
 
+    // Format response
     const formattedConcentration = {
       ...newConcentration,
       team: formatTeamInfo(newConcentration.team),
@@ -154,17 +144,6 @@ export const getConcentrationById = async (req, res) => {
             id: true,
             name: true,
             email: true,
-          },
-        },
-        trainings: {
-          include: {
-            submitter: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
           },
         },
       },
@@ -282,10 +261,16 @@ export const updateConcentration = async (req, res) => {
       },
     });
 
+    // Format response
+    const formattedConcentration = {
+      ...updatedConcentration,
+      team: formatTeamInfo(updatedConcentration.team),
+    };
+
     res.json({
       success: true,
       message: "Cập nhật đợt tập trung thành công",
-      data: updatedConcentration,
+      data: formattedConcentration,
     });
   } catch (error) {
     res.status(500).json({
@@ -516,6 +501,41 @@ export const deleteConcentrationNote = async (req, res) => {
       success: true,
       message: "Xóa ghi chú thành công",
       data: updatedConcentration,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Lấy danh sách trainings của concentration
+export const getTrainingsByConcentration = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const trainings = await prisma.training.findMany({
+      where: {
+        concentration_id: parseInt(id),
+      },
+      include: {
+        submitter: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        startDate: "asc",
+      },
+    });
+
+    res.json({
+      success: true,
+      data: trainings,
     });
   } catch (error) {
     res.status(500).json({

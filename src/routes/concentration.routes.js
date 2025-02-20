@@ -10,6 +10,7 @@ import {
   detachPaperFromConcentration,
   updateConcentrationNote,
   deleteConcentrationNote,
+  getTrainingsByConcentration,
 } from "../controllers/concentration.controller.js";
 
 const router = express.Router();
@@ -24,5 +25,6 @@ router.post("/:id/papers", attachPaperToConcentration);
 router.delete("/:id/papers/:paperId", detachPaperFromConcentration);
 router.put("/:id/note", updateConcentrationNote);
 router.delete("/:id/note", deleteConcentrationNote);
+router.get("/:id/trainings", getTrainingsByConcentration);
 
 export default router;

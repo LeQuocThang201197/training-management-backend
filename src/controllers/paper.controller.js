@@ -212,3 +212,30 @@ export const getConcentrationsByPaper = async (req, res) => {
     });
   }
 };
+
+// Gỡ bỏ liên kết với concentration
+export const detachConcentrationFromPaper = async (req, res) => {
+  try {
+    const { id, concentrationId } = req.params;
+
+    await prisma.paperOnConcentration.delete({
+      where: {
+        paper_id_concentration_id: {
+          paper_id: parseInt(id),
+          concentration_id: parseInt(concentrationId),
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Đã gỡ bỏ liên kết với đợt tập trung",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
