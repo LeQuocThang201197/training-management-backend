@@ -239,3 +239,72 @@ export const detachConcentrationFromPaper = async (req, res) => {
     });
   }
 };
+
+// Gắn concentration vào paper
+export const attachConcentrationToPaper = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { concentrationIds } = req.body; // Mảng các concentration IDs
+
+    const results = await Promise.all(
+      concentrationIds.map(async (concentrationId) => {
+        try {
+          return await prisma.paperOnConcentration.create({
+            data: {
+              paper_id: parseInt(id),
+              concentration_id: parseInt(concentrationId),
+              assignedBy: req.user.id,
+            },
+            include: {
+              concentration: {
+                include: {
+                  team: {
+                    include: {
+                      sport: true,
+                    },
+                  },
+                  submitter: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+        } catch (error) {
+          return {
+            concentrationId,
+            error: error.message,
+          };
+        }
+      })
+    );
+
+    // Format response
+    const formattedResults = results.map((result) => {
+      if (result.error) return result;
+      return {
+        ...result,
+        concentration: {
+          ...result.concentration,
+          team: formatTeamInfo(result.concentration.team),
+        },
+      };
+    });
+
+    res.json({
+      success: true,
+      message: "Đã gắn đợt tập trung vào văn bản",
+      data: formattedResults,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
