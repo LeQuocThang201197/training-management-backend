@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { formatTeamInfo } from "../constants/index.js";
 
 // Tạo văn bản mới
 export const createPaper = async (req, res) => {
@@ -156,6 +157,53 @@ export const getPaperFile = async (req, res) => {
     }
 
     res.download(paper.file_path, paper.file_name, { inline: true });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Lấy danh sách đợt tập trung liên quan đến giấy tờ
+export const getConcentrationsByPaper = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const concentrations = await prisma.paperOnConcentration.findMany({
+      where: {
+        paper_id: parseInt(id),
+      },
+      include: {
+        concentration: {
+          include: {
+            team: {
+              include: {
+                sport: true,
+              },
+            },
+            submitter: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Format response
+    const formattedConcentrations = concentrations.map((poc) => ({
+      ...poc.concentration,
+      team: formatTeamInfo(poc.concentration.team),
+    }));
+
+    res.json({
+      success: true,
+      data: formattedConcentrations,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,

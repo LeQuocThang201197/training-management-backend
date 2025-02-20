@@ -46,7 +46,7 @@ export const createConcentration = async (req, res) => {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         note,
-        submitter_id: req.user.id, // Lấy id của user đang đăng nhập
+        submitter_id: req.user.id,
       },
       include: {
         team: {
@@ -61,13 +61,29 @@ export const createConcentration = async (req, res) => {
             email: true,
           },
         },
+        trainings: {
+          include: {
+            submitter: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
+
+    const formattedConcentration = {
+      ...newConcentration,
+      team: formatTeamInfo(newConcentration.team),
+    };
 
     res.status(201).json({
       success: true,
       message: "Tạo đợt tập trung thành công",
-      data: newConcentration,
+      data: formattedConcentration,
     });
   } catch (error) {
     res.status(500).json({
