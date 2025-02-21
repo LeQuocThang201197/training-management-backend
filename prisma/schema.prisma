@@ -76,6 +76,7 @@ model Team {
   updatedAt     DateTime        @updatedAt
 
   @@unique([sportId, type, gender])
+  @@index([sportId])
   @@schema("training_management")
 }
 
@@ -137,9 +138,11 @@ model Concentration {
   submitter       User      @relation(fields: [submitter_id], references: [id])
   trainings       Training[] // Các đợt tập huấn trong thời gian tập trung
   papers          PaperOnConcentration[] // Relation với bảng trung gian
+  participants    PersonOnConcentration[] // Thêm relation field này
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  @@index([teamId])
   @@schema("training_management")
 }
 
@@ -169,5 +172,80 @@ model PaperOnConcentration {
   concentration    Concentration @relation(fields: [concentration_id], references: [id])
 
   @@id([paper_id, concentration_id])
+  @@schema("training_management")
+}
+
+// Bảng định nghĩa các vai trò
+model Role {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique    // Tên vai trò (VĐV, HLV, Bác sĩ...)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  assignments PersonOnConcentration[] // Relation với bảng trung gian
+
+  @@schema("training_management")
+}
+
+model Person {
+  id                Int       @id @default(autoincrement())
+  name              String    // Tên
+  code              String?   // Mã định danh (nếu có)
+  identity_number   String?   // Số CCCD/CMND
+  identity_date     DateTime? // Ngày cấp CCCD/CMND
+  identity_place    String?   // Nơi cấp CCCD/CMND
+  social_insurance  String?   // Mã số BHXH
+  birthday         DateTime? // Ngày sinh
+  gender           String    // Giới tính
+  phone            String?   // Số điện thoại
+  email            String?   // Email
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  participations   PersonOnConcentration[] // Quan hệ với bảng trung gian
+
+  @@schema("training_management")
+}
+
+// Loại đơn vị trực thuộc
+enum AffiliationType {
+  PROVINCE    // Tỉnh/Thành phố
+  CENTER      // Trung tâm Huấn luyện
+  OTHER       // Khác
+
+  @@schema("training_management")
+}
+
+// Bảng đơn vị trực thuộc
+model Affiliation {
+  id          Int             @id @default(autoincrement())
+  name        String          // Tên đơn vị (Hà Nội, TTHL TDTT Quốc gia...)
+  type        AffiliationType // Loại đơn vị
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  assignments PersonOnConcentration[] // Relation với bảng trung gian
+
+  @@unique([name, type])
+  @@schema("training_management")
+}
+
+model PersonOnConcentration {
+  id              Int           @id @default(autoincrement())
+  person_id       Int           // ID của người tham gia
+  concentration_id Int          // ID của đợt tập trung
+  role_id         Int          // ID của vai trò
+  startDate       DateTime      // Ngày bắt đầu tham gia (mặc định là ngày bắt đầu của concentration)
+  endDate         DateTime      // Ngày kết thúc tham gia (mặc định là ngày kết thúc của concentration)
+  note            String?       // Ghi chú (lý do thêm/bớt)
+  assignedBy      Int          // Người thực hiện thao tác
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  person          Person       @relation(fields: [person_id], references: [id])
+  concentration   Concentration @relation(fields: [concentration_id], references: [id])
+  role            Role         @relation(fields: [role_id], references: [id])
+  affiliation_id  Int          // ID của đơn vị trực thuộc
+  affiliation     Affiliation  @relation(fields: [affiliation_id], references: [id])
+
+  @@index([startDate, endDate])
+  @@index([concentration_id])
+  @@index([affiliation_id])
   @@schema("training_management")
 }

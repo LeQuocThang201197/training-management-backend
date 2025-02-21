@@ -5,6 +5,7 @@ import sportRoutes from "./sport.routes.js";
 import teamRoutes from "./team.routes.js";
 import paperRoutes from "./paper.routes.js";
 import concentrationRoutes from "./concentration.routes.js";
+import personRoutes from "./person.routes.js";
 import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
@@ -16,6 +17,7 @@ router.use("/sports", isAuthenticated, sportRoutes);
 router.use("/teams", isAuthenticated, teamRoutes);
 router.use("/papers", isAuthenticated, paperRoutes);
 router.use("/concentrations", isAuthenticated, concentrationRoutes);
+router.use("/persons", personRoutes);
 
 // Protected routes
 router.get("/profile", isAuthenticated, (req, res) => {
