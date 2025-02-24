@@ -101,17 +101,24 @@ export const getConcentrations = async (req, res) => {
             email: true,
           },
         },
-        trainings: true,
+        participants: {
+          where: {
+            startDate: { lte: new Date() },
+            endDate: { gte: new Date() },
+          },
+        },
       },
       orderBy: {
         startDate: "desc",
       },
     });
 
-    // Format team info theo chuẩn
+    // Format response và thêm số người tham gia
     const formattedConcentrations = concentrations.map((concentration) => ({
       ...concentration,
       team: formatTeamInfo(concentration.team),
+      participantsCount: concentration.participants.length,
+      participants: undefined, // Không trả về danh sách chi tiết participants
     }));
 
     res.json({
@@ -127,7 +134,7 @@ export const getConcentrations = async (req, res) => {
   }
 };
 
-// Lấy chi tiết đợt tập trung (không bao gồm papers)
+// Lấy chi tiết đợt tập trung
 export const getConcentrationById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -146,6 +153,17 @@ export const getConcentrationById = async (req, res) => {
             email: true,
           },
         },
+        participants: {
+          where: {
+            startDate: { lte: new Date() },
+            endDate: { gte: new Date() },
+          },
+          include: {
+            person: true,
+            role: true,
+            affiliation: true,
+          },
+        },
       },
     });
 
@@ -160,6 +178,8 @@ export const getConcentrationById = async (req, res) => {
     const formattedConcentration = {
       ...concentration,
       team: formatTeamInfo(concentration.team),
+      participantsCount: concentration.participants.length,
+      // Có thể giữ lại hoặc bỏ thông tin chi tiết participants tùy nhu cầu
     };
 
     res.json({
@@ -547,6 +567,58 @@ export const getTrainingsByConcentration = async (req, res) => {
     res.json({
       success: true,
       data: trainings,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Thêm người vào đợt tập trung
+export const addParticipantToConcentration = async (req, res) => {
+  try {
+    const { id } = req.params; // concentration_id
+    const { personId, roleId, affiliationId, startDate, endDate, note } =
+      req.body;
+
+    // Kiểm tra concentration tồn tại
+    const concentration = await prisma.concentration.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!concentration) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đợt tập trung",
+      });
+    }
+
+    // Tạo liên kết
+    const participation = await prisma.personOnConcentration.create({
+      data: {
+        person_id: parseInt(personId),
+        concentration_id: parseInt(id),
+        role_id: parseInt(roleId),
+        affiliation_id: parseInt(affiliationId),
+        startDate: startDate ? new Date(startDate) : concentration.startDate,
+        endDate: endDate ? new Date(endDate) : concentration.endDate,
+        note,
+        assignedBy: req.user.id,
+      },
+      include: {
+        person: true,
+        role: true,
+        affiliation: true,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Thêm người tham gia thành công",
+      data: participation,
     });
   } catch (error) {
     res.status(500).json({

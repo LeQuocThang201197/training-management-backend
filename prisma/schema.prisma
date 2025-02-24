@@ -9,6 +9,27 @@ generator client {
   previewFeatures = ["multiSchema"]
 }
 
+// Enum cho loại vai trò của person
+enum PersonRoleType {
+  ATHLETE     // Vận động viên
+  COACH       // Huấn luyện viên
+  OTHER       // Khác
+
+  @@schema("training_management")
+}
+
+// Role của nhân sự (vai trò trong đợt tập trung)
+model PersonRole {
+  id          Int             @id @default(autoincrement())
+  name        String          @unique    // Tên vai trò (Vận động viên, Huấn luyện viên, Bác sĩ...)
+  type        PersonRoleType  // Loại vai trò 
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  assignments PersonOnConcentration[] // Relation với bảng trung gian
+
+  @@schema("training_management")
+}
+
 model User {
   id        Int       @id @default(autoincrement())
   email     String    @unique
@@ -175,17 +196,6 @@ model PaperOnConcentration {
   @@schema("training_management")
 }
 
-// Bảng định nghĩa các vai trò
-model Role {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique    // Tên vai trò (VĐV, HLV, Bác sĩ...)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  assignments PersonOnConcentration[] // Relation với bảng trung gian
-
-  @@schema("training_management")
-}
-
 model Person {
   id                Int       @id @default(autoincrement())
   name              String    // Tên
@@ -239,7 +249,7 @@ model PersonOnConcentration {
   updatedAt       DateTime     @updatedAt
   person          Person       @relation(fields: [person_id], references: [id])
   concentration   Concentration @relation(fields: [concentration_id], references: [id])
-  role            Role         @relation(fields: [role_id], references: [id])
+  role            PersonRole   @relation(fields: [role_id], references: [id])
   affiliation_id  Int          // ID của đơn vị trực thuộc
   affiliation     Affiliation  @relation(fields: [affiliation_id], references: [id])
 
