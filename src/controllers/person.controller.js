@@ -6,7 +6,6 @@ export const createPerson = async (req, res) => {
   try {
     const {
       name,
-      code,
       identity_number,
       identity_date,
       identity_place,
@@ -20,7 +19,6 @@ export const createPerson = async (req, res) => {
     const newPerson = await prisma.person.create({
       data: {
         name,
-        code,
         identity_number,
         identity_date: identity_date ? new Date(identity_date) : null,
         identity_place,
@@ -102,7 +100,6 @@ export const updatePerson = async (req, res) => {
     const { id } = req.params;
     const {
       name,
-      code,
       identity_number,
       identity_date,
       identity_place,
@@ -117,7 +114,6 @@ export const updatePerson = async (req, res) => {
       where: { id: parseInt(id) },
       data: {
         name,
-        code,
         identity_number,
         identity_date: identity_date ? new Date(identity_date) : null,
         identity_place,
@@ -202,6 +198,137 @@ export const getPersonParticipations = async (req, res) => {
     res.json({
       success: true,
       data: formattedParticipations,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Thêm person vào concentration
+export const attachPersonToConcentration = async (req, res) => {
+  try {
+    const { id } = req.params; // person_id
+    const {
+      concentration_id,
+      role_id,
+      affiliation_id,
+      startDate,
+      endDate,
+      note,
+    } = req.body;
+
+    // Kiểm tra concentration tồn tại
+    const concentration = await prisma.concentration.findUnique({
+      where: { id: parseInt(concentration_id) },
+    });
+
+    if (!concentration) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đợt tập trung",
+      });
+    }
+
+    // Tạo liên kết
+    const participation = await prisma.personOnConcentration.create({
+      data: {
+        person_id: parseInt(id),
+        concentration_id: parseInt(concentration_id),
+        role_id: parseInt(role_id),
+        affiliation_id: parseInt(affiliation_id),
+        startDate: startDate ? new Date(startDate) : concentration.startDate,
+        endDate: endDate ? new Date(endDate) : concentration.endDate,
+        note,
+        assignedBy: req.user.id,
+      },
+      include: {
+        concentration: {
+          include: {
+            team: {
+              include: {
+                sport: true,
+              },
+            },
+          },
+        },
+        role: true,
+        affiliation: true,
+      },
+    });
+
+    // Format response
+    const formattedParticipation = {
+      ...participation,
+      concentration: {
+        ...participation.concentration,
+        team: formatTeamInfo(participation.concentration.team),
+      },
+    };
+
+    res.status(201).json({
+      success: true,
+      message: "Thêm người tham gia thành công",
+      data: formattedParticipation,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Cập nhật thông tin tham gia
+export const updatePersonParticipation = async (req, res) => {
+  try {
+    const { id, participationId } = req.params;
+    const { role_id, affiliation_id, startDate, endDate, note } = req.body;
+
+    const participation = await prisma.personOnConcentration.update({
+      where: {
+        id: parseInt(participationId),
+        person_id: parseInt(id),
+      },
+      data: {
+        role_id: parseInt(role_id),
+        affiliation_id: parseInt(affiliation_id),
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        note,
+      },
+      include: {
+        concentration: {
+          include: {
+            team: {
+              include: {
+                sport: true,
+              },
+            },
+          },
+        },
+        role: true,
+        affiliation: true,
+      },
+    });
+
+    // Format response
+    const formattedParticipation = {
+      ...participation,
+      concentration: {
+        ...participation.concentration,
+        team: formatTeamInfo(participation.concentration.team),
+      },
+    };
+
+    res.json({
+      success: true,
+      message: "Cập nhật thông tin tham gia thành công",
+      data: formattedParticipation,
     });
   } catch (error) {
     res.status(500).json({

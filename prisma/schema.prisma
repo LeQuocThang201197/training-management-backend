@@ -189,7 +189,6 @@ model Role {
 model Person {
   id                Int       @id @default(autoincrement())
   name              String    // Tên
-  code              String?   // Mã định danh (nếu có)
   identity_number   String?   // Số CCCD/CMND
   identity_date     DateTime? // Ngày cấp CCCD/CMND
   identity_place    String?   // Nơi cấp CCCD/CMND

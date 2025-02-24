@@ -189,6 +189,17 @@ export const updateConcentration = async (req, res) => {
       note,
     } = req.body;
 
+    // Validate và parse dates
+    const parsedStartDate = new Date(startDate);
+    const parsedEndDate = new Date(endDate);
+
+    if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Ngày không hợp lệ",
+      });
+    }
+
     // Kiểm tra overlap với các đợt tập trung khác của team (trừ đợt hiện tại)
     const existingConcentrations = await prisma.concentration.findMany({
       where: {
@@ -199,8 +210,8 @@ export const updateConcentration = async (req, res) => {
         OR: [
           {
             AND: [
-              { startDate: { lte: new Date(endDate) } },
-              { endDate: { gte: new Date(startDate) } },
+              { startDate: { lte: parsedEndDate } },
+              { endDate: { gte: parsedStartDate } },
             ],
           },
         ],
@@ -241,8 +252,8 @@ export const updateConcentration = async (req, res) => {
         location,
         related_year: parseInt(related_year),
         sequence_number: parseInt(sequence_number),
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: parsedStartDate,
+        endDate: parsedEndDate,
         note,
       },
       include: {
