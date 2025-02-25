@@ -215,19 +215,18 @@ model Person {
 }
 
 // Loại đơn vị trực thuộc
-enum AffiliationType {
+enum OrganizationType {
   PROVINCE    // Tỉnh/Thành phố
-  CENTER      // Trung tâm Huấn luyện
   OTHER       // Khác
 
   @@schema("training_management")
 }
 
 // Bảng đơn vị trực thuộc
-model Affiliation {
+model Organization {
   id          Int             @id @default(autoincrement())
   name        String          // Tên đơn vị (Hà Nội, TTHL TDTT Quốc gia...)
-  type        AffiliationType // Loại đơn vị
+  type        OrganizationType // Loại đơn vị
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   assignments PersonOnConcentration[] // Relation với bảng trung gian
@@ -250,11 +249,11 @@ model PersonOnConcentration {
   person          Person       @relation(fields: [person_id], references: [id])
   concentration   Concentration @relation(fields: [concentration_id], references: [id])
   role            PersonRole   @relation(fields: [role_id], references: [id])
-  affiliation_id  Int          // ID của đơn vị trực thuộc
-  affiliation     Affiliation  @relation(fields: [affiliation_id], references: [id])
+  organization_id  Int          // ID của đơn vị trực thuộc
+  organization     Organization  @relation(fields: [organization_id], references: [id])
 
   @@index([startDate, endDate])
   @@index([concentration_id])
-  @@index([affiliation_id])
+  @@index([organization_id])
   @@schema("training_management")
 }
