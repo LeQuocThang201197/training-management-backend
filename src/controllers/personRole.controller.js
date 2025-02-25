@@ -1,4 +1,7 @@
 import { prisma } from "../config/prisma.js";
+import pkg from "@prisma/client";
+
+const { PersonRoleType } = pkg; // Import enum từ @prisma/client
 
 // Tạo role mới
 export const createPersonRole = async (req, res) => {
@@ -128,6 +131,35 @@ export const deletePersonRole = async (req, res) => {
     res.json({
       success: true,
       message: "Xóa vai trò thành công",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Lấy danh sách PersonRoleType enum values
+export const getPersonRoleTypes = async (req, res) => {
+  try {
+    // Lấy tất cả giá trị của enum PersonRoleType
+    const types = Object.values(PersonRoleType);
+
+    // Format response với label tiếng Việt
+    const formattedTypes = types.map((type) => ({
+      value: type,
+      label: {
+        ATHLETE: "Vận động viên",
+        COACH: "Huấn luyện viên",
+        OTHER: "Khác",
+      }[type],
+    }));
+
+    res.json({
+      success: true,
+      data: formattedTypes,
     });
   } catch (error) {
     res.status(500).json({
