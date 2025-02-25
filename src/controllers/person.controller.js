@@ -338,3 +338,41 @@ export const updatePersonParticipation = async (req, res) => {
     });
   }
 };
+
+// Tìm kiếm person theo tên
+export const getPersonsByName = async (req, res) => {
+  try {
+    const { q } = req.query; // q là search query từ client
+
+    if (!q) {
+      return res.json({
+        success: true,
+        data: [],
+      });
+    }
+
+    const persons = await prisma.person.findMany({
+      where: {
+        name: {
+          contains: q,
+          mode: "insensitive", // Tìm kiếm không phân biệt hoa thường
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+      take: 10, // Giới hạn số lượng kết quả
+    });
+
+    res.json({
+      success: true,
+      data: persons,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};

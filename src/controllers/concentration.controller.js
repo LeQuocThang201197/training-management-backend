@@ -155,13 +155,17 @@ export const getConcentrationById = async (req, res) => {
         },
         participants: {
           where: {
-            startDate: { lte: new Date() },
-            endDate: { gte: new Date() },
+            startDate: {
+              lte: new Date(),
+            },
+            endDate: {
+              gte: new Date(),
+            },
           },
           include: {
             person: true,
             role: true,
-            affiliation: true,
+            organization: true,
           },
         },
       },
@@ -577,41 +581,28 @@ export const getTrainingsByConcentration = async (req, res) => {
   }
 };
 
-// Thêm người vào đợt tập trung
+// Thêm người tham gia vào đợt tập trung
 export const addParticipantToConcentration = async (req, res) => {
   try {
-    const { id } = req.params; // concentration_id
-    const { personId, roleId, affiliationId, startDate, endDate, note } =
+    const { id } = req.params;
+    const { personId, roleId, organizationId, startDate, endDate, note } =
       req.body;
 
-    // Kiểm tra concentration tồn tại
-    const concentration = await prisma.concentration.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!concentration) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy đợt tập trung",
-      });
-    }
-
-    // Tạo liên kết
     const participation = await prisma.personOnConcentration.create({
       data: {
         person_id: parseInt(personId),
         concentration_id: parseInt(id),
         role_id: parseInt(roleId),
-        affiliation_id: parseInt(affiliationId),
-        startDate: startDate ? new Date(startDate) : concentration.startDate,
-        endDate: endDate ? new Date(endDate) : concentration.endDate,
-        note,
+        organization_id: parseInt(organizationId),
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        note: note || "",
         assignedBy: req.user.id,
       },
       include: {
         person: true,
         role: true,
-        affiliation: true,
+        organization: true,
       },
     });
 

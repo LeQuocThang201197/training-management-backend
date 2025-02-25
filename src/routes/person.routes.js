@@ -8,6 +8,7 @@ import {
   getPersonParticipations,
   attachPersonToConcentration,
   updatePersonParticipation,
+  getPersonsByName,
 } from "../controllers/person.controller.js";
 import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.post("/", createPerson);
 router.get("/", getPersons);
+router.get("/search", getPersonsByName);
 router.get("/:id", getPersonById);
 router.put("/:id", updatePerson);
 router.delete("/:id", deletePerson);
