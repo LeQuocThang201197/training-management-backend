@@ -3,6 +3,13 @@ import pkg from "@prisma/client";
 
 const { PersonRoleType } = pkg; // Import enum từ @prisma/client
 
+// Định nghĩa labels cho PersonRoleType
+const ROLE_TYPE_LABELS = {
+  ATHLETE: "Vận động viên",
+  COACH: "Huấn luyện viên",
+  OTHER: "Khác",
+};
+
 // Tạo role mới
 export const createPersonRole = async (req, res) => {
   try {
@@ -38,9 +45,15 @@ export const getPersonRoles = async (req, res) => {
       },
     });
 
+    // Format response với type label
+    const formattedRoles = roles.map((role) => ({
+      ...role,
+      typeLabel: ROLE_TYPE_LABELS[role.type],
+    }));
+
     res.json({
       success: true,
-      data: roles,
+      data: formattedRoles,
     });
   } catch (error) {
     res.status(500).json({
@@ -144,17 +157,12 @@ export const deletePersonRole = async (req, res) => {
 // Lấy danh sách PersonRoleType enum values
 export const getPersonRoleTypes = async (req, res) => {
   try {
-    // Lấy tất cả giá trị của enum PersonRoleType
     const types = Object.values(PersonRoleType);
 
-    // Format response với label tiếng Việt
+    // Sử dụng lại ROLE_TYPE_LABELS
     const formattedTypes = types.map((type) => ({
       value: type,
-      label: {
-        ATHLETE: "Vận động viên",
-        COACH: "Huấn luyện viên",
-        OTHER: "Khác",
-      }[type],
+      label: ROLE_TYPE_LABELS[type],
     }));
 
     res.json({
