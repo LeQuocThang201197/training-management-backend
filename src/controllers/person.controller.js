@@ -44,18 +44,49 @@ export const createPerson = async (req, res) => {
   }
 };
 
-// Lấy danh sách person
+// Lấy danh sách person với phân trang, tìm kiếm và sắp xếp
 export const getPersons = async (req, res) => {
   try {
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      sortBy = "name",
+      order = "asc",
+    } = req.query;
+
+    // Xây dựng điều kiện where
+    const where = {
+      ...(search && {
+        name: {
+          contains: search,
+          mode: "insensitive",
+        },
+      }),
+    };
+
+    // Đếm tổng số bản ghi thỏa mãn điều kiện
+    const total = await prisma.person.count({ where });
+
+    // Lấy danh sách theo phân trang và sắp xếp
     const persons = await prisma.person.findMany({
+      where,
       orderBy: {
-        name: "asc",
+        [sortBy]: order.toLowerCase(),
       },
+      skip: (parseInt(page) - 1) * parseInt(limit),
+      take: parseInt(limit),
     });
 
     res.json({
       success: true,
       data: persons,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     res.status(500).json({
