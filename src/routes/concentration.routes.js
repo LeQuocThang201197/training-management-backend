@@ -12,6 +12,9 @@ import {
   deleteConcentrationNote,
   getTrainingsByConcentration,
   addParticipantToConcentration,
+  getConcentrationParticipants,
+  updateParticipant,
+  removeParticipant,
 } from "../controllers/concentration.controller.js";
 import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
@@ -20,6 +23,7 @@ const router = express.Router();
 router.post("/", createConcentration);
 router.get("/", getConcentrations);
 router.get("/:id", getConcentrationById);
+router.get("/:id/participants", getConcentrationParticipants);
 router.put("/:id", updateConcentration);
 router.delete("/:id", deleteConcentration);
 router.get("/:id/papers", getPapersByConcentration);
@@ -32,6 +36,16 @@ router.post(
   "/:id/participants",
   isAuthenticated,
   addParticipantToConcentration
+);
+router.put(
+  "/:id/participants/:participantId",
+  isAuthenticated,
+  updateParticipant
+);
+router.delete(
+  "/:id/participants/:participantId",
+  isAuthenticated,
+  removeParticipant
 );
 
 export default router;

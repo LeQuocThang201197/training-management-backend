@@ -134,6 +134,41 @@ export const getConcentrations = async (req, res) => {
   }
 };
 
+// Lấy danh sách người tham gia của đợt tập trung
+export const getConcentrationParticipants = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date } = req.query; // Có thể thêm query param để lọc theo ngày
+
+    const participants = await prisma.personOnConcentration.findMany({
+      where: {
+        concentration_id: parseInt(id),
+        ...(date && {
+          startDate: { lte: new Date(date) },
+          endDate: { gte: new Date(date) },
+        }),
+      },
+      include: {
+        person: true,
+        role: true,
+        organization: true,
+      },
+      orderBy: [{ role: { name: "asc" } }, { person: { name: "asc" } }],
+    });
+
+    res.json({
+      success: true,
+      data: participants,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
 // Lấy chi tiết đợt tập trung
 export const getConcentrationById = async (req, res) => {
   try {
@@ -153,21 +188,6 @@ export const getConcentrationById = async (req, res) => {
             email: true,
           },
         },
-        participants: {
-          where: {
-            startDate: {
-              lte: new Date(),
-            },
-            endDate: {
-              gte: new Date(),
-            },
-          },
-          include: {
-            person: true,
-            role: true,
-            organization: true,
-          },
-        },
       },
     });
 
@@ -178,12 +198,9 @@ export const getConcentrationById = async (req, res) => {
       });
     }
 
-    // Format response
     const formattedConcentration = {
       ...concentration,
       team: formatTeamInfo(concentration.team),
-      participantsCount: concentration.participants.length,
-      // Có thể giữ lại hoặc bỏ thông tin chi tiết participants tùy nhu cầu
     };
 
     res.json({
@@ -610,6 +627,70 @@ export const addParticipantToConcentration = async (req, res) => {
       success: true,
       message: "Thêm người tham gia thành công",
       data: participation,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Cập nhật thông tin tham gia đợt tập trung
+export const updateParticipant = async (req, res) => {
+  try {
+    const { id, participantId } = req.params;
+    const { roleId, organizationId, startDate, endDate, note } = req.body;
+
+    const participation = await prisma.personOnConcentration.update({
+      where: {
+        id: parseInt(participantId),
+        concentration_id: parseInt(id),
+      },
+      data: {
+        role_id: parseInt(roleId),
+        organization_id: parseInt(organizationId),
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        note,
+      },
+      include: {
+        person: true,
+        role: true,
+        organization: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Cập nhật thông tin tham gia thành công",
+      data: participation,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Xóa người tham gia khỏi đợt tập trung
+export const removeParticipant = async (req, res) => {
+  try {
+    const { id, participantId } = req.params;
+
+    await prisma.personOnConcentration.delete({
+      where: {
+        id: parseInt(participantId),
+        concentration_id: parseInt(id),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Xóa người tham gia thành công",
     });
   } catch (error) {
     res.status(500).json({
