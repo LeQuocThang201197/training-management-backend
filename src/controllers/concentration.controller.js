@@ -101,20 +101,35 @@ export const getConcentrations = async (req, res) => {
             email: true,
           },
         },
-        participants: true, // Chỉ cần lấy số lượng người tham gia
+        participants: {
+          include: {
+            role: true, // Include role để lấy type
+          },
+        },
       },
       orderBy: {
-        startDate: "desc", // Sắp xếp theo startDate của concentration
+        startDate: "desc",
       },
     });
 
-    // Format response và thêm số người tham gia
-    const formattedConcentrations = concentrations.map((concentration) => ({
-      ...concentration,
-      team: formatTeamInfo(concentration.team),
-      participantsCount: concentration.participants.length,
-      participants: undefined, // Không trả về danh sách chi tiết participants
-    }));
+    // Format response và thêm số lượng người tham gia theo role type
+    const formattedConcentrations = concentrations.map((concentration) => {
+      const participantStats = concentration.participants.reduce(
+        (acc, participant) => {
+          const roleType = participant.role.type;
+          acc[roleType] = (acc[roleType] || 0) + 1;
+          return acc;
+        },
+        { ATHLETE: 0, COACH: 0, OTHER: 0 }
+      );
+
+      return {
+        ...concentration,
+        team: formatTeamInfo(concentration.team),
+        participantStats,
+        participants: undefined, // Không trả về danh sách chi tiết
+      };
+    });
 
     res.json({
       success: true,
@@ -183,6 +198,11 @@ export const getConcentrationById = async (req, res) => {
             email: true,
           },
         },
+        participants: {
+          include: {
+            role: true,
+          },
+        },
       },
     });
 
@@ -193,9 +213,21 @@ export const getConcentrationById = async (req, res) => {
       });
     }
 
+    // Tính toán số lượng theo role type
+    const participantStats = concentration.participants.reduce(
+      (acc, participant) => {
+        const roleType = participant.role.type;
+        acc[roleType] = (acc[roleType] || 0) + 1;
+        return acc;
+      },
+      { ATHLETE: 0, COACH: 0, OTHER: 0 }
+    );
+
     const formattedConcentration = {
       ...concentration,
       team: formatTeamInfo(concentration.team),
+      participantStats,
+      participants: undefined,
     };
 
     res.json({
