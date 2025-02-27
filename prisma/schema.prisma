@@ -13,6 +13,7 @@ generator client {
 enum PersonRoleType {
   ATHLETE     // Vận động viên
   COACH       // Huấn luyện viên
+  SPECIALIST  // Chuyên gia
   OTHER       // Khác
 
   @@schema("training_management")

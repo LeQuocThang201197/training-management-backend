@@ -7,6 +7,7 @@ const { PersonRoleType } = pkg; // Import enum từ @prisma/client
 const ROLE_TYPE_LABELS = {
   ATHLETE: "Vận động viên",
   COACH: "Huấn luyện viên",
+  SPECIALIST: "Chuyên gia",
   OTHER: "Khác",
 };
 

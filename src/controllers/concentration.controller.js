@@ -120,7 +120,7 @@ export const getConcentrations = async (req, res) => {
           acc[roleType] = (acc[roleType] || 0) + 1;
           return acc;
         },
-        { ATHLETE: 0, COACH: 0, OTHER: 0 }
+        { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
       );
 
       return {
@@ -220,7 +220,7 @@ export const getConcentrationById = async (req, res) => {
         acc[roleType] = (acc[roleType] || 0) + 1;
         return acc;
       },
-      { ATHLETE: 0, COACH: 0, OTHER: 0 }
+      { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
     );
 
     const formattedConcentration = {
