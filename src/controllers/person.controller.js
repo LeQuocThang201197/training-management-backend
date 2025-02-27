@@ -243,14 +243,7 @@ export const getPersonParticipations = async (req, res) => {
 export const attachPersonToConcentration = async (req, res) => {
   try {
     const { id } = req.params; // person_id
-    const {
-      concentration_id,
-      role_id,
-      affiliation_id,
-      startDate,
-      endDate,
-      note,
-    } = req.body;
+    const { concentration_id, role_id, organization_id, note } = req.body;
 
     // Kiểm tra concentration tồn tại
     const concentration = await prisma.concentration.findUnique({
@@ -270,9 +263,7 @@ export const attachPersonToConcentration = async (req, res) => {
         person_id: parseInt(id),
         concentration_id: parseInt(concentration_id),
         role_id: parseInt(role_id),
-        affiliation_id: parseInt(affiliation_id),
-        startDate: startDate ? new Date(startDate) : concentration.startDate,
-        endDate: endDate ? new Date(endDate) : concentration.endDate,
+        organization_id: parseInt(organization_id),
         note,
         assignedBy: req.user.id,
       },
@@ -287,7 +278,7 @@ export const attachPersonToConcentration = async (req, res) => {
           },
         },
         role: true,
-        affiliation: true,
+        organization: true,
       },
     });
 
@@ -318,7 +309,7 @@ export const attachPersonToConcentration = async (req, res) => {
 export const updatePersonParticipation = async (req, res) => {
   try {
     const { id, participationId } = req.params;
-    const { role_id, affiliation_id, startDate, endDate, note } = req.body;
+    const { role_id, organization_id, note } = req.body;
 
     const participation = await prisma.personOnConcentration.update({
       where: {
@@ -327,9 +318,7 @@ export const updatePersonParticipation = async (req, res) => {
       },
       data: {
         role_id: parseInt(role_id),
-        affiliation_id: parseInt(affiliation_id),
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : undefined,
+        organization_id: parseInt(organization_id),
         note,
       },
       include: {
@@ -343,7 +332,7 @@ export const updatePersonParticipation = async (req, res) => {
           },
         },
         role: true,
-        affiliation: true,
+        organization: true,
       },
     });
 

@@ -602,8 +602,7 @@ export const getTrainingsByConcentration = async (req, res) => {
 export const addParticipantToConcentration = async (req, res) => {
   try {
     const { id } = req.params;
-    const { personId, roleId, organizationId, startDate, endDate, note } =
-      req.body;
+    const { personId, roleId, organizationId, note } = req.body;
 
     const participation = await prisma.personOnConcentration.create({
       data: {
@@ -611,8 +610,6 @@ export const addParticipantToConcentration = async (req, res) => {
         concentration_id: parseInt(id),
         role_id: parseInt(roleId),
         organization_id: parseInt(organizationId),
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : undefined,
         note: note || "",
         assignedBy: req.user.id,
       },
@@ -641,7 +638,7 @@ export const addParticipantToConcentration = async (req, res) => {
 export const updateParticipant = async (req, res) => {
   try {
     const { id, participantId } = req.params;
-    const { roleId, organizationId, startDate, endDate, note } = req.body;
+    const { roleId, organizationId, note } = req.body;
 
     const participation = await prisma.personOnConcentration.update({
       where: {
@@ -651,8 +648,6 @@ export const updateParticipant = async (req, res) => {
       data: {
         role_id: parseInt(roleId),
         organization_id: parseInt(organizationId),
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : undefined,
         note,
       },
       include: {

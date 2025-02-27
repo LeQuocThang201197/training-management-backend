@@ -43,6 +43,7 @@ model User {
   concentrations Concentration[]
   trainings    Training[]
   papers     Paper[]
+  competitions Competition[]
 
   @@schema("auth")
 }
@@ -177,6 +178,7 @@ model Training {
   concentration   Concentration @relation(fields: [concentration_id], references: [id])
   submitter_id    Int          // Người tạo thông tin
   submitter       User         @relation(fields: [submitter_id], references: [id])
+  absences        AbsenceRecord[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -235,25 +237,76 @@ model Organization {
   @@schema("training_management")
 }
 
+// Bảng trung gian quản lý người tham gia đợt tập trung
 model PersonOnConcentration {
   id              Int           @id @default(autoincrement())
   person_id       Int           // ID của người tham gia
   concentration_id Int          // ID của đợt tập trung
   role_id         Int          // ID của vai trò
-  startDate       DateTime      // Ngày bắt đầu tham gia (mặc định là ngày bắt đầu của concentration)
-  endDate         DateTime      // Ngày kết thúc tham gia (mặc định là ngày kết thúc của concentration)
-  note            String?       // Ghi chú (lý do thêm/bớt)
+  organization_id Int          // ID của đơn vị trực thuộc
+  note            String?      // Ghi chú (lý do thêm/bớt)
   assignedBy      Int          // Người thực hiện thao tác
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  // Relations
   person          Person       @relation(fields: [person_id], references: [id])
   concentration   Concentration @relation(fields: [concentration_id], references: [id])
   role            PersonRole   @relation(fields: [role_id], references: [id])
-  organization_id  Int          // ID của đơn vị trực thuộc
-  organization     Organization  @relation(fields: [organization_id], references: [id])
+  organization    Organization @relation(fields: [organization_id], references: [id])
+  absences        AbsenceRecord[] // Thêm relation với bảng AbsenceRecord
 
-  @@index([startDate, endDate])
   @@index([concentration_id])
   @@index([organization_id])
+  @@schema("training_management")
+}
+
+// Thêm bảng quản lý vắng mặt
+model AbsenceRecord {
+  id                Int           @id @default(autoincrement())
+  participation_id  Int           // Link tới PersonOnConcentration
+  type             AbsenceType
+  startDate        DateTime      // Thời gian bắt đầu vắng mặt
+  endDate          DateTime      // Thời gian kết thúc vắng mặt
+  note             String?       // Ghi chú thêm
+  training_id      Int?          // Optional link tới Training
+  competition_id   Int?          // Optional link tới Competition
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  // Relations
+  participation    PersonOnConcentration @relation(fields: [participation_id], references: [id])
+  training         Training?    @relation(fields: [training_id], references: [id])
+  competition      Competition? @relation(fields: [competition_id], references: [id])
+
+  @@index([startDate, endDate])
+  @@schema("training_management")
+}
+
+enum AbsenceType {
+  NOT_JOINED     // Chưa tham gia
+  REMOVED        // Bị loại khỏi đợt tập trung
+  TRAINING       // Đi tập huấn
+  COMPETITION    // Đi thi đấu
+  LEAVE          // Nghỉ phép
+
+  @@schema("training_management")
+}
+
+// Bảng quản lý giải đấu
+model Competition {
+  id              Int           @id @default(autoincrement())
+  name            String        // Tên giải đấu
+  location        String        // Địa điểm thi đấu
+  startDate       DateTime      // Ngày bắt đầu
+  endDate         DateTime      // Ngày kết thúc
+  description     String?       // Mô tả chi tiết
+  note            String?       // Ghi chú
+  submitter_id    Int          // Người tạo thông tin
+  submitter       User         @relation(fields: [submitter_id], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  absences        AbsenceRecord[] // Relation với bảng AbsenceRecord
+
   @@schema("training_management")
 }
