@@ -101,15 +101,10 @@ export const getConcentrations = async (req, res) => {
             email: true,
           },
         },
-        participants: {
-          where: {
-            startDate: { lte: new Date() },
-            endDate: { gte: new Date() },
-          },
-        },
+        participants: true, // Chỉ cần lấy số lượng người tham gia
       },
       orderBy: {
-        startDate: "desc",
+        startDate: "desc", // Sắp xếp theo startDate của concentration
       },
     });
 

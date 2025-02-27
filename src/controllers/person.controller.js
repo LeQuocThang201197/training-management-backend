@@ -210,10 +210,12 @@ export const getPersonParticipations = async (req, res) => {
           },
         },
         role: true,
-        affiliation: true,
+        organization: true,
       },
       orderBy: {
-        startDate: "desc",
+        concentration: {
+          startDate: "desc",
+        },
       },
     });
 
