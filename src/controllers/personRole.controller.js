@@ -11,6 +11,12 @@ const ROLE_TYPE_LABELS = {
   OTHER: "Khác",
 };
 
+// Helper function để format role
+const formatRole = (role) => ({
+  ...role,
+  typeLabel: ROLE_TYPE_LABELS[role.type],
+});
+
 // Tạo role mới
 export const createPersonRole = async (req, res) => {
   try {
@@ -26,7 +32,7 @@ export const createPersonRole = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Tạo vai trò thành công",
-      data: newRole,
+      data: formatRole(newRole),
     });
   } catch (error) {
     res.status(500).json({
@@ -47,10 +53,7 @@ export const getPersonRoles = async (req, res) => {
     });
 
     // Format response với type label
-    const formattedRoles = roles.map((role) => ({
-      ...role,
-      typeLabel: ROLE_TYPE_LABELS[role.type],
-    }));
+    const formattedRoles = roles.map(formatRole);
 
     res.json({
       success: true,
@@ -82,7 +85,7 @@ export const getPersonRoleById = async (req, res) => {
 
     res.json({
       success: true,
-      data: role,
+      data: formatRole(role),
     });
   } catch (error) {
     res.status(500).json({
@@ -110,7 +113,7 @@ export const updatePersonRole = async (req, res) => {
     res.json({
       success: true,
       message: "Cập nhật vai trò thành công",
-      data: updatedRole,
+      data: formatRole(updatedRole),
     });
   } catch (error) {
     res.status(500).json({
