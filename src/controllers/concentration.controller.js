@@ -625,6 +625,27 @@ export const getTrainingsByConcentration = async (req, res) => {
   }
 };
 
+// Helper function để tính toán participantStats
+const calculateParticipantStats = async (concentrationId) => {
+  const participants = await prisma.personOnConcentration.findMany({
+    where: {
+      concentration_id: concentrationId,
+    },
+    include: {
+      role: true,
+    },
+  });
+
+  return participants.reduce(
+    (acc, participant) => {
+      const roleType = participant.role.type;
+      acc[roleType] = (acc[roleType] || 0) + 1;
+      return acc;
+    },
+    { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+  );
+};
+
 // Thêm người tham gia vào đợt tập trung
 export const addParticipantToConcentration = async (req, res) => {
   try {
@@ -647,10 +668,14 @@ export const addParticipantToConcentration = async (req, res) => {
       },
     });
 
+    // Tính toán lại stats
+    const participantStats = await calculateParticipantStats(parseInt(id));
+
     res.status(201).json({
       success: true,
       message: "Thêm người tham gia thành công",
       data: participation,
+      participantStats,
     });
   } catch (error) {
     res.status(500).json({
@@ -684,10 +709,14 @@ export const updateParticipant = async (req, res) => {
       },
     });
 
+    // Tính toán lại stats
+    const participantStats = await calculateParticipantStats(parseInt(id));
+
     res.json({
       success: true,
       message: "Cập nhật thông tin tham gia thành công",
       data: participation,
+      participantStats,
     });
   } catch (error) {
     res.status(500).json({
@@ -710,9 +739,13 @@ export const removeParticipant = async (req, res) => {
       },
     });
 
+    // Tính toán lại stats
+    const participantStats = await calculateParticipantStats(parseInt(id));
+
     res.json({
       success: true,
       message: "Xóa người tham gia thành công",
+      participantStats,
     });
   } catch (error) {
     res.status(500).json({
