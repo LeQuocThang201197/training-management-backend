@@ -15,6 +15,7 @@ import {
   getConcentrationParticipants,
   updateParticipant,
   removeParticipant,
+  getAbsencesByConcentration,
 } from "../controllers/concentration.controller.js";
 import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
@@ -47,5 +48,6 @@ router.delete(
   isAuthenticated,
   removeParticipant
 );
+router.get("/:id/absences", getAbsencesByConcentration);
 
 export default router;

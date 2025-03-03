@@ -755,3 +755,68 @@ export const removeParticipant = async (req, res) => {
     });
   }
 };
+
+// Lấy danh sách vắng mặt của một đợt tập trung
+export const getAbsencesByConcentration = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Kiểm tra concentration tồn tại
+    const concentration = await prisma.concentration.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!concentration) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đợt tập trung",
+      });
+    }
+
+    const absences = await prisma.absenceRecord.findMany({
+      where: {
+        participation: {
+          concentration_id: parseInt(id),
+        },
+      },
+      include: {
+        participation: {
+          include: {
+            person: true,
+            role: true,
+            organization: true,
+          },
+        },
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [
+        {
+          participation: {
+            person: {
+              name: "asc",
+            },
+          },
+        },
+        {
+          startDate: "asc",
+        },
+      ],
+    });
+
+    res.json({
+      success: true,
+      data: absences,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};

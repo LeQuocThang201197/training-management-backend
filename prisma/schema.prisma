@@ -45,6 +45,9 @@ model User {
   trainings    Training[]
   papers     Paper[]
   competitions Competition[]
+  absenceRecords AbsenceRecord[]
+  trainingParticipants    TrainingParticipant[]
+  competitionParticipants CompetitionParticipant[]
 
   @@schema("auth")
 }
@@ -179,7 +182,7 @@ model Training {
   concentration   Concentration @relation(fields: [concentration_id], references: [id])
   submitter_id    Int          // Người tạo thông tin
   submitter       User         @relation(fields: [submitter_id], references: [id])
-  absences        AbsenceRecord[]
+  participants    TrainingParticipant[]  // Chỉ giữ lại relation này
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -249,20 +252,22 @@ model PersonOnConcentration {
   assignedBy      Int          // Người thực hiện thao tác
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+  absences              AbsenceRecord[]
+  trainingParticipations TrainingParticipant[]
+  competitionParticipations CompetitionParticipant[]
 
   // Relations
   person          Person       @relation(fields: [person_id], references: [id])
   concentration   Concentration @relation(fields: [concentration_id], references: [id])
   role            PersonRole   @relation(fields: [role_id], references: [id])
   organization    Organization @relation(fields: [organization_id], references: [id])
-  absences        AbsenceRecord[] // Thêm relation với bảng AbsenceRecord
 
   @@index([concentration_id])
   @@index([organization_id])
   @@schema("training_management")
 }
 
-// Thêm bảng quản lý vắng mặt
+// Bảng quản lý vắng mặt (chỉ cho không tham gia và nghỉ phép)
 model AbsenceRecord {
   id                Int           @id @default(autoincrement())
   participation_id  Int           // Link tới PersonOnConcentration
@@ -270,26 +275,21 @@ model AbsenceRecord {
   startDate        DateTime      // Thời gian bắt đầu vắng mặt
   endDate          DateTime      // Thời gian kết thúc vắng mặt
   note             String?       // Ghi chú thêm
-  training_id      Int?          // Optional link tới Training
-  competition_id   Int?          // Optional link tới Competition
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdBy        Int          // Người tạo record
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   // Relations
   participation    PersonOnConcentration @relation(fields: [participation_id], references: [id])
-  training         Training?    @relation(fields: [training_id], references: [id])
-  competition      Competition? @relation(fields: [competition_id], references: [id])
+  creator          User         @relation(fields: [createdBy], references: [id])
 
   @@index([startDate, endDate])
   @@schema("training_management")
 }
 
 enum AbsenceType {
-  NOT_JOINED     // Chưa tham gia
-  REMOVED        // Bị loại khỏi đợt tập trung
-  TRAINING       // Đi tập huấn
-  COMPETITION    // Đi thi đấu
-  LEAVE          // Nghỉ phép
+  INACTIVE      // Không hoạt động (chưa tham gia/tạm dừng/bị loại)
+  LEAVE         // Nghỉ phép
 
   @@schema("training_management")
 }
@@ -305,9 +305,47 @@ model Competition {
   note            String?       // Ghi chú
   submitter_id    Int          // Người tạo thông tin
   submitter       User         @relation(fields: [submitter_id], references: [id])
+  participants    CompetitionParticipant[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  absences        AbsenceRecord[] // Relation với bảng AbsenceRecord
 
+  @@schema("training_management")
+}
+
+// Bảng quản lý người tham gia tập huấn
+model TrainingParticipant {
+  id                Int           @id @default(autoincrement())
+  participation_id  Int          // Link tới PersonOnConcentration
+  training_id       Int          // Link tới Training
+  note             String?       // Ghi chú thêm
+  createdBy        Int          // Người thêm
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  participation    PersonOnConcentration @relation(fields: [participation_id], references: [id])
+  training         Training     @relation(fields: [training_id], references: [id])
+  creator          User         @relation(fields: [createdBy], references: [id])
+
+  @@unique([participation_id, training_id])
+  @@schema("training_management")
+}
+
+// Bảng quản lý người tham gia thi đấu
+model CompetitionParticipant {
+  id                Int           @id @default(autoincrement())
+  participation_id  Int          // Link tới PersonOnConcentration
+  competition_id    Int          // Link tới Competition
+  note             String?       // Ghi chú thêm
+  createdBy        Int          // Người thêm
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  participation    PersonOnConcentration @relation(fields: [participation_id], references: [id])
+  competition      Competition  @relation(fields: [competition_id], references: [id])
+  creator          User         @relation(fields: [createdBy], references: [id])
+
+  @@unique([participation_id, competition_id])
   @@schema("training_management")
 }
