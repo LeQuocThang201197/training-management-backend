@@ -101,6 +101,11 @@ export const getConcentrations = async (req, res) => {
             email: true,
           },
         },
+        participants: {
+          include: {
+            role: true,
+          },
+        },
       },
       orderBy: {
         startDate: "desc",
@@ -108,10 +113,23 @@ export const getConcentrations = async (req, res) => {
     });
 
     // Format response và thêm số lượng người tham gia theo role type
-    const formattedConcentrations = concentrations.map((concentration) => ({
-      ...concentration,
-      team: formatTeamInfo(concentration.team),
-    }));
+    const formattedConcentrations = concentrations.map((concentration) => {
+      const participantStats = concentration.participants.reduce(
+        (acc, participant) => {
+          const roleType = participant.role.type;
+          acc[roleType] = (acc[roleType] || 0) + 1;
+          return acc;
+        },
+        { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+      );
+
+      return {
+        ...concentration,
+        team: formatTeamInfo(concentration.team),
+        participantStats,
+        participants: undefined, // Không trả về danh sách chi tiết
+      };
+    });
 
     res.json({
       success: true,
