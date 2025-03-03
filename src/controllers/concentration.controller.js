@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import { formatTeamInfo } from "../constants/index.js";
+import { Prisma } from "@prisma/client";
 
 // Tạo đợt tập trung mới
 export const createConcentration = async (req, res) => {
@@ -104,6 +105,23 @@ export const getConcentrations = async (req, res) => {
         participants: {
           include: {
             role: true,
+            absences: {
+              where: {
+                type: "INACTIVE",
+                AND: [
+                  {
+                    startDate: {
+                      lte: getStartOfDay(),
+                    },
+                  },
+                  {
+                    endDate: {
+                      gte: getStartOfDay(),
+                    },
+                  },
+                ],
+              },
+            },
           },
         },
       },
@@ -116,6 +134,11 @@ export const getConcentrations = async (req, res) => {
     const formattedConcentrations = concentrations.map((concentration) => {
       const participantStats = concentration.participants.reduce(
         (acc, participant) => {
+          // Nếu người này đang INACTIVE thì không tính
+          if (participant.absences.length > 0) {
+            return acc;
+          }
+
           const roleType = participant.role.type;
           acc[roleType] = (acc[roleType] || 0) + 1;
           return acc;
@@ -127,7 +150,7 @@ export const getConcentrations = async (req, res) => {
         ...concentration,
         team: formatTeamInfo(concentration.team),
         participantStats,
-        participants: undefined, // Không trả về danh sách chi tiết
+        participants: undefined,
       };
     });
 
@@ -769,4 +792,86 @@ export const getAbsencesByConcentration = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+// Helper function để tính toán số lượng người tham gia
+const calculateParticipantStats = async (concentrationId) => {
+  const participants = await prisma.personOnConcentration.findMany({
+    where: {
+      concentration_id: parseInt(concentrationId),
+    },
+    include: {
+      role: true,
+      absences: {
+        where: {
+          type: "INACTIVE",
+          AND: [
+            {
+              startDate: {
+                lte: getStartOfDay(),
+              },
+            },
+            {
+              endDate: {
+                gte: getStartOfDay(),
+              },
+            },
+          ],
+        },
+      },
+    },
+  });
+
+  return participants.reduce(
+    (acc, participant) => {
+      // Nếu người này đang INACTIVE thì không tính
+      if (participant.absences.length > 0) {
+        return acc;
+      }
+
+      const roleType = participant.role.type;
+      acc[roleType] = (acc[roleType] || 0) + 1;
+      return acc;
+    },
+    { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+  );
+};
+
+// API endpoint mới
+export const getParticipantStats = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Kiểm tra concentration tồn tại
+    const concentration = await prisma.concentration.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!concentration) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đợt tập trung",
+      });
+    }
+
+    const participantStats = await calculateParticipantStats(id);
+
+    res.json({
+      success: true,
+      data: participantStats,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Helper function để lấy thời điểm đầu ngày hiện tại
+const getStartOfDay = () => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
 };
