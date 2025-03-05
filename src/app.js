@@ -19,12 +19,32 @@ const app = express();
 // CORS config
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "http://192.168.1.16:5173", // IP local
+        "http://192.168.1.16", // Thêm không có port
+        "https://*.ngrok-free.app",
+      ];
+
+      const isNgrok = /^https:\/\/.*\.ngrok-free.app$/.test(origin);
+      if (allowedOrigins.includes(origin) || isNgrok) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+    exposedHeaders: ["set-cookie"],
   })
 );
+
+// Thêm middleware để xử lý preflight requests
+app.options("*", cors());
 
 app.use(cookieParser());
 app.use(express.json());
@@ -36,10 +56,12 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: true, // Cần thiết vì đang dùng ngrok làm proxy
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000, // 24 giờ
+      secure: true, // Giữ true vì backend chạy qua HTTPS (ngrok)
+      sameSite: "none", // Cần thiết vì frontend và backend khác origin
+      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );

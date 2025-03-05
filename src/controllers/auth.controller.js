@@ -52,6 +52,8 @@ export const register = async (req, res) => {
 };
 
 export const login = (req, res, next) => {
+  console.log("Login request from:", req.headers.origin);
+
   passport.authenticate("local", (err, user, info) => {
     if (err) {
       return res.status(500).json({
@@ -77,6 +79,14 @@ export const login = (req, res, next) => {
         });
       }
 
+      // Set cookie options
+      res.cookie("connect.sid", req.sessionID, {
+        httpOnly: true,
+        secure: true,
+        sameSite: process.env.NODE_ENV === "production" ? "lax" : "none",
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+
       return res.json({
         success: true,
         message: "Đăng nhập thành công",
@@ -100,4 +110,18 @@ export const logout = (req, res) => {
       message: "Đăng xuất thành công",
     });
   });
+};
+
+export const verifyAuth = (req, res) => {
+  if (req.isAuthenticated()) {
+    res.json({
+      success: true,
+      data: { user: req.user },
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      message: "Chưa đăng nhập",
+    });
+  }
 };
