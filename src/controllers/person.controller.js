@@ -1,6 +1,11 @@
 import { prisma } from "../config/prisma.js";
 import { formatTeamInfo } from "../constants/index.js";
 
+// Hàm format giới tính
+const formatGender = (gender) => {
+  return gender ? "Nam" : "Nữ";
+};
+
 // Tạo person mới
 export const createPerson = async (req, res) => {
   try {
@@ -24,7 +29,7 @@ export const createPerson = async (req, res) => {
         identity_place,
         social_insurance,
         birthday: birthday ? new Date(birthday) : null,
-        gender,
+        gender: gender === "Nam",
         phone,
         email,
       },
@@ -33,7 +38,10 @@ export const createPerson = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Tạo thông tin cá nhân thành công",
-      data: newPerson,
+      data: {
+        ...newPerson,
+        gender: formatGender(newPerson.gender),
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -114,7 +122,10 @@ export const getPersonById = async (req, res) => {
 
     res.json({
       success: true,
-      data: person,
+      data: {
+        ...person,
+        gender: formatGender(person.gender),
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -150,7 +161,7 @@ export const updatePerson = async (req, res) => {
         identity_place,
         social_insurance,
         birthday: birthday ? new Date(birthday) : null,
-        gender,
+        gender: gender === "Nam",
         phone,
         email,
       },
@@ -159,7 +170,10 @@ export const updatePerson = async (req, res) => {
     res.json({
       success: true,
       message: "Cập nhật thông tin cá nhân thành công",
-      data: updatedPerson,
+      data: {
+        ...updatedPerson,
+        gender: formatGender(updatedPerson.gender),
+      },
     });
   } catch (error) {
     res.status(500).json({

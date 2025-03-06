@@ -167,31 +167,40 @@ export const getConcentrations = async (req, res) => {
   }
 };
 
+const formatGender = (gender) => {
+  return gender ? "Nam" : "Nữ";
+};
+
 // Lấy danh sách người tham gia của đợt tập trung
 export const getConcentrationParticipants = async (req, res) => {
   try {
     const { id } = req.params;
-    const { date } = req.query; // Có thể thêm query param để lọc theo ngày
-
     const participants = await prisma.personOnConcentration.findMany({
       where: {
         concentration_id: parseInt(id),
-        ...(date && {
-          startDate: { lte: new Date(date) },
-          endDate: { gte: new Date(date) },
-        }),
       },
       include: {
         person: true,
         role: true,
         organization: true,
       },
-      orderBy: [{ role: { name: "asc" } }, { person: { name: "asc" } }],
+      orderBy: {
+        createdAt: "desc",
+      },
     });
+
+    // Format response với gender đã được format
+    const formattedParticipants = participants.map((p) => ({
+      ...p,
+      person: {
+        ...p.person,
+        gender: formatGender(p.person.gender),
+      },
+    }));
 
     res.json({
       success: true,
-      data: participants,
+      data: formattedParticipants,
     });
   } catch (error) {
     res.status(500).json({
@@ -653,10 +662,19 @@ export const addParticipantToConcentration = async (req, res) => {
       },
     });
 
+    // Format gender trước khi trả về
+    const formattedParticipation = {
+      ...participation,
+      person: {
+        ...participation.person,
+        gender: formatGender(participation.person.gender),
+      },
+    };
+
     res.status(201).json({
       success: true,
       message: "Thêm người tham gia thành công",
-      data: participation,
+      data: formattedParticipation,
     });
   } catch (error) {
     res.status(500).json({
@@ -690,10 +708,19 @@ export const updateParticipant = async (req, res) => {
       },
     });
 
+    // Format gender trước khi trả về
+    const formattedParticipation = {
+      ...participation,
+      person: {
+        ...participation.person,
+        gender: formatGender(participation.person.gender),
+      },
+    };
+
     res.json({
       success: true,
       message: "Cập nhật thông tin tham gia thành công",
-      data: participation,
+      data: formattedParticipation,
     });
   } catch (error) {
     res.status(500).json({
@@ -781,9 +808,21 @@ export const getAbsencesByConcentration = async (req, res) => {
       ],
     });
 
+    // Format gender trong danh sách vắng mặt
+    const formattedAbsences = absences.map((absence) => ({
+      ...absence,
+      participation: {
+        ...absence.participation,
+        person: {
+          ...absence.participation.person,
+          gender: formatGender(absence.participation.person.gender),
+        },
+      },
+    }));
+
     res.json({
       success: true,
-      data: absences,
+      data: formattedAbsences,
     });
   } catch (error) {
     res.status(500).json({

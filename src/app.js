@@ -24,8 +24,8 @@ app.use(
 
       const allowedOrigins = [
         "http://localhost:5173",
-        "http://192.168.1.16:5173", // IP local
-        "http://192.168.1.16", // Thêm không có port
+        "http://192.168.1.16:5173",
+        "http://192.168.1.16",
         "https://*.ngrok-free.app",
       ];
 
@@ -56,11 +56,11 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    proxy: true, // Cần thiết vì đang dùng ngrok làm proxy
+    proxy: true, // Cần thiết vì dùng ngrok
     cookie: {
       httpOnly: true,
-      secure: true, // Giữ true vì backend chạy qua HTTPS (ngrok)
-      sameSite: "none", // Cần thiết vì frontend và backend khác origin
+      secure: true, // Giữ true vì backend qua HTTPS
+      sameSite: "none", // Cần thiết vì cross-origin
       maxAge: 24 * 60 * 60 * 1000,
     },
   })

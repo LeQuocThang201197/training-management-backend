@@ -132,8 +132,8 @@ enum ManagementRoom {
 
 model Paper {
   id            Int      @id @default(autoincrement())
-  number        Int
-  code          String
+  number        Int?     // Thêm ? để cho phép null
+  code          String?  // Thêm ? để cho phép null
   publisher     String
   type          String
   content       String
@@ -175,17 +175,37 @@ model Concentration {
 model Training {
   id              Int           @id @default(autoincrement())
   location        String        // Địa điểm tập huấn
+  isForeign       Boolean       // true = Nước ngoài, false = Trong nước
   startDate       DateTime      // Ngày bắt đầu tập huấn
   endDate         DateTime      // Ngày kết thúc tập huấn
   note            String        // Ghi chú
-  concentration_id Int          // Thuộc đợt tập trung nào
+  concentration_id Int          
   concentration   Concentration @relation(fields: [concentration_id], references: [id])
-  submitter_id    Int          // Người tạo thông tin
+  submitter_id    Int          
   submitter       User         @relation(fields: [submitter_id], references: [id])
-  participants    TrainingParticipant[]  // Chỉ giữ lại relation này
+  participants    TrainingParticipant[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
+  @@schema("training_management")
+}
+
+// Bảng quản lý người tham gia tập huấn
+model TrainingParticipant {
+  id                Int           @id @default(autoincrement())
+  participation_id  Int          // Link tới PersonOnConcentration
+  training_id       Int          // Link tới Training
+  note             String?       // Ghi chú thêm
+  createdBy        Int          // Người thêm
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  participation    PersonOnConcentration @relation(fields: [participation_id], references: [id])
+  training         Training     @relation(fields: [training_id], references: [id])
+  creator          User         @relation(fields: [createdBy], references: [id])
+
+  @@unique([participation_id, training_id])
   @@schema("training_management")
 }
 
@@ -210,7 +230,7 @@ model Person {
   identity_place    String?   // Nơi cấp CCCD/CMND
   social_insurance  String?   // Mã số BHXH
   birthday         DateTime? // Ngày sinh
-  gender           String    // Giới tính
+  gender           Boolean   // Giới tính
   phone            String?   // Số điện thoại
   email            String?   // Email
   createdAt        DateTime  @default(now())
@@ -299,35 +319,17 @@ model Competition {
   id              Int           @id @default(autoincrement())
   name            String        // Tên giải đấu
   location        String        // Địa điểm thi đấu
+  isForeign       Boolean       // true = Nước ngoài, false = Trong nước
   startDate       DateTime      // Ngày bắt đầu
   endDate         DateTime      // Ngày kết thúc
   description     String?       // Mô tả chi tiết
   note            String?       // Ghi chú
-  submitter_id    Int          // Người tạo thông tin
+  submitter_id    Int          
   submitter       User         @relation(fields: [submitter_id], references: [id])
   participants    CompetitionParticipant[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  @@schema("training_management")
-}
-
-// Bảng quản lý người tham gia tập huấn
-model TrainingParticipant {
-  id                Int           @id @default(autoincrement())
-  participation_id  Int          // Link tới PersonOnConcentration
-  training_id       Int          // Link tới Training
-  note             String?       // Ghi chú thêm
-  createdBy        Int          // Người thêm
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-
-  // Relations
-  participation    PersonOnConcentration @relation(fields: [participation_id], references: [id])
-  training         Training     @relation(fields: [training_id], references: [id])
-  creator          User         @relation(fields: [createdBy], references: [id])
-
-  @@unique([participation_id, training_id])
   @@schema("training_management")
 }
 
