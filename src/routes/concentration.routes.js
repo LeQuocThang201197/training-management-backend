@@ -10,7 +10,6 @@ import {
   detachPaperFromConcentration,
   updateConcentrationNote,
   deleteConcentrationNote,
-  getTrainingsByConcentration,
   addParticipantToConcentration,
   getConcentrationParticipants,
   updateParticipant,
@@ -33,7 +32,6 @@ router.post("/:id/papers", attachPaperToConcentration);
 router.delete("/:id/papers/:paperId", detachPaperFromConcentration);
 router.put("/:id/note", updateConcentrationNote);
 router.delete("/:id/note", deleteConcentrationNote);
-router.get("/:id/trainings", getTrainingsByConcentration);
 router.post(
   "/:id/participants",
   isAuthenticated,

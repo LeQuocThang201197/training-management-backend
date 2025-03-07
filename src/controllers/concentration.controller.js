@@ -47,7 +47,7 @@ export const createConcentration = async (req, res) => {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         note,
-        submitter_id: req.user.id,
+        created_by: req.user.id,
       },
       include: {
         team: {
@@ -55,11 +55,10 @@ export const createConcentration = async (req, res) => {
             sport: true,
           },
         },
-        submitter: {
+        creator: {
           select: {
             id: true,
             name: true,
-            email: true,
           },
         },
       },
@@ -95,11 +94,10 @@ export const getConcentrations = async (req, res) => {
             sport: true,
           },
         },
-        submitter: {
+        creator: {
           select: {
             id: true,
             name: true,
-            email: true,
           },
         },
         participants: {
@@ -223,7 +221,7 @@ export const getConcentrationById = async (req, res) => {
             sport: true,
           },
         },
-        submitter: {
+        creator: {
           select: {
             id: true,
             name: true,
@@ -321,7 +319,7 @@ export const updateConcentration = async (req, res) => {
       });
     }
 
-    if (concentration.submitter_id !== req.user.id) {
+    if (concentration.created_by !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: "Không có quyền sửa thông tin này",
@@ -345,11 +343,10 @@ export const updateConcentration = async (req, res) => {
             sport: true,
           },
         },
-        submitter: {
+        creator: {
           select: {
             id: true,
             name: true,
-            email: true,
           },
         },
       },
@@ -392,7 +389,7 @@ export const deleteConcentration = async (req, res) => {
       });
     }
 
-    if (concentration.submitter_id !== req.user.id) {
+    if (concentration.created_by !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: "Không có quyền xóa thông tin này",
@@ -461,7 +458,7 @@ export const attachPaperToConcentration = async (req, res) => {
             data: {
               paper_id: parseInt(paperId),
               concentration_id: parseInt(id),
-              assignedBy: req.user.id,
+              assigned_by: req.user.id,
             },
             include: {
               paper: true,
@@ -536,7 +533,7 @@ export const updateConcentrationNote = async (req, res) => {
       });
     }
 
-    if (concentration.submitter_id !== req.user.id) {
+    if (concentration.created_by !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: "Không có quyền sửa thông tin này",
@@ -579,7 +576,7 @@ export const deleteConcentrationNote = async (req, res) => {
       });
     }
 
-    if (concentration.submitter_id !== req.user.id) {
+    if (concentration.created_by !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: "Không có quyền sửa thông tin này",
@@ -605,41 +602,6 @@ export const deleteConcentrationNote = async (req, res) => {
   }
 };
 
-// Lấy danh sách trainings của concentration
-export const getTrainingsByConcentration = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const trainings = await prisma.training.findMany({
-      where: {
-        concentration_id: parseInt(id),
-      },
-      include: {
-        submitter: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: {
-        startDate: "asc",
-      },
-    });
-
-    res.json({
-      success: true,
-      data: trainings,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server",
-      error: error.message,
-    });
-  }
-};
-
 // Thêm người tham gia vào đợt tập trung
 export const addParticipantToConcentration = async (req, res) => {
   try {
@@ -653,7 +615,7 @@ export const addParticipantToConcentration = async (req, res) => {
         role_id: parseInt(roleId),
         organization_id: parseInt(organizationId),
         note: note || "",
-        assignedBy: req.user.id,
+        assigned_by: req.user.id,
       },
       include: {
         person: true,

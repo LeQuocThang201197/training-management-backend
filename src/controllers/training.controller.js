@@ -18,7 +18,7 @@ export const createTraining = async (req, res) => {
         endDate: new Date(endDate),
         note,
         concentration_id: parseInt(concentration_id),
-        submitter_id: req.user.id,
+        created_by: req.user.id,
       },
       include: {
         submitter: {
@@ -115,7 +115,7 @@ export const addParticipantToTraining = async (req, res) => {
         training_id: parseInt(id),
         participation_id: parseInt(participation_id),
         note: note || "",
-        createdBy: req.user.id,
+        created_by: req.user.id,
       },
       include: {
         participation: {
@@ -188,6 +188,41 @@ export const getTrainingParticipants = async (req, res) => {
     res.json({
       success: true,
       data: formattedParticipants,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Lấy danh sách training của một concentration
+export const getTrainingsByConcentration = async (req, res) => {
+  try {
+    const { concentrationId } = req.params;
+
+    const trainings = await prisma.training.findMany({
+      where: {
+        concentration_id: parseInt(concentrationId),
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        startDate: "asc",
+      },
+    });
+
+    res.json({
+      success: true,
+      data: trainings,
     });
   } catch (error) {
     res.status(500).json({
