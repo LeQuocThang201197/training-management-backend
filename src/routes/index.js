@@ -9,6 +9,7 @@ import personRoutes from "./person.routes.js";
 import personRoleRoutes from "./personRole.routes.js";
 import organizationRoutes from "./organization.routes.js";
 import absenceRoutes from "./absence.routes.js";
+import trainingRoutes from "./training.routes.js";
 import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
@@ -24,6 +25,7 @@ router.use("/persons", personRoutes);
 router.use("/person-roles", personRoleRoutes);
 router.use("/organizations", organizationRoutes);
 router.use("/absences", absenceRoutes);
+router.use("/trainings", trainingRoutes);
 
 // Protected routes
 router.get("/profile", isAuthenticated, (req, res) => {

@@ -86,9 +86,15 @@ export const getPersons = async (req, res) => {
       take: parseInt(limit),
     });
 
+    // Format gender trước khi trả về
+    const formattedPersons = persons.map((person) => ({
+      ...person,
+      gender: formatGender(person.gender),
+    }));
+
     res.json({
       success: true,
-      data: persons,
+      data: formattedPersons,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -400,9 +406,15 @@ export const getPersonsByName = async (req, res) => {
       take: 10, // Giới hạn số lượng kết quả
     });
 
+    // Format gender trước khi trả về
+    const formattedPersons = persons.map((person) => ({
+      ...person,
+      gender: formatGender(person.gender),
+    }));
+
     res.json({
       success: true,
-      data: persons,
+      data: formattedPersons,
     });
   } catch (error) {
     res.status(500).json({
