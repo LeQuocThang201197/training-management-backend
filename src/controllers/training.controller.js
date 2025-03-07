@@ -21,7 +21,7 @@ export const createTraining = async (req, res) => {
         created_by: req.user.id,
       },
       include: {
-        submitter: {
+        creator: {
           select: {
             id: true,
             name: true,
@@ -60,7 +60,7 @@ export const updateTraining = async (req, res) => {
         note,
       },
       include: {
-        submitter: {
+        creator: {
           select: {
             id: true,
             name: true,
