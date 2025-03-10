@@ -170,12 +170,31 @@ export const getTrainingParticipants = async (req, res) => {
             organization: true,
           },
         },
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        participation: {
+          person: {
+            name: "asc",
+          },
+        },
       },
     });
 
     // Format gender trong response
     const formattedParticipants = participants.map((p) => ({
-      ...p,
+      participation_id: p.participation_id, // Thêm rõ các trường để frontend dễ xử lý
+      training_id: p.training_id,
+      note: p.note,
+      created_by: p.created_by,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      creator: p.creator,
       participation: {
         ...p.participation,
         person: {
@@ -315,12 +334,31 @@ export const updateTrainingParticipants = async (req, res) => {
             organization: true,
           },
         },
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        participation: {
+          person: {
+            name: "asc",
+          },
+        },
       },
     });
 
     // Format gender trong response
     const formattedParticipants = updatedParticipants.map((p) => ({
-      ...p,
+      participation_id: p.participation_id,
+      training_id: p.training_id,
+      note: p.note,
+      created_by: p.created_by,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      creator: p.creator,
       participation: {
         ...p.participation,
         person: {

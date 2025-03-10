@@ -196,11 +196,10 @@ model Training {
 
 // Bảng quản lý người tham gia tập huấn
 model TrainingParticipant {
-  id                Int           @id @default(autoincrement())
   participation_id  Int          
   training_id       Int          
   note             String?       
-  created_by       Int          // Đổi từ createdBy
+  created_by       Int          
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
@@ -209,7 +208,7 @@ model TrainingParticipant {
   training         Training     @relation(fields: [training_id], references: [id])
   creator          User         @relation("creator", fields: [created_by], references: [id])
 
-  @@unique([participation_id, training_id])
+  @@id([participation_id, training_id])
   @@schema("training_management")
 }
 
