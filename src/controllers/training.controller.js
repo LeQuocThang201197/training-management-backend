@@ -186,9 +186,19 @@ export const getTrainingParticipants = async (req, res) => {
       },
     });
 
+    // Tính toán số lượng theo role type
+    const participantStats = participants.reduce(
+      (acc, participant) => {
+        const roleType = participant.participation.role.type;
+        acc[roleType] = (acc[roleType] || 0) + 1;
+        return acc;
+      },
+      { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+    );
+
     // Format gender trong response
     const formattedParticipants = participants.map((p) => ({
-      participation_id: p.participation_id, // Thêm rõ các trường để frontend dễ xử lý
+      participation_id: p.participation_id,
       training_id: p.training_id,
       note: p.note,
       created_by: p.created_by,
@@ -206,7 +216,10 @@ export const getTrainingParticipants = async (req, res) => {
 
     res.json({
       success: true,
-      data: formattedParticipants,
+      data: {
+        participants: formattedParticipants,
+        stats: participantStats,
+      },
     });
   } catch (error) {
     res.status(500).json({
