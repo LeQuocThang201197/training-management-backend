@@ -122,6 +122,19 @@ export const getConcentrations = async (req, res) => {
             },
           },
         },
+        trainings: {
+          include: {
+            participants: {
+              include: {
+                participation: {
+                  include: {
+                    role: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: {
         startDate: "desc",
@@ -130,6 +143,7 @@ export const getConcentrations = async (req, res) => {
 
     // Format response và thêm số lượng người tham gia theo role type
     const formattedConcentrations = concentrations.map((concentration) => {
+      // Tính toán số lượng người tham gia concentration theo role type
       const participantStats = concentration.participants.reduce(
         (acc, participant) => {
           // Nếu người này đang INACTIVE thì không tính
@@ -144,11 +158,34 @@ export const getConcentrations = async (req, res) => {
         { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
       );
 
+      // Format trainings và tính số lượng người tham gia
+      const formattedTrainings = concentration.trainings.map((training) => {
+        // Tính toán số lượng người tham gia training theo role type
+        const trainingStats = training.participants.reduce(
+          (acc, participant) => {
+            const roleType = participant.participation.role.type;
+            acc[roleType] = (acc[roleType] || 0) + 1;
+            return acc;
+          },
+          { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+        );
+
+        // Loại bỏ thông tin chi tiết participants
+        const { participants, ...trainingInfo } = training;
+
+        return {
+          ...trainingInfo,
+          participantStats: trainingStats,
+          totalParticipants: training.participants.length,
+        };
+      });
+
       return {
         ...concentration,
         team: formatTeamInfo(concentration.team),
         participantStats,
-        participants: undefined,
+        trainings: formattedTrainings,
+        participants: undefined, // Không trả về danh sách chi tiết người tham gia
       };
     });
 
