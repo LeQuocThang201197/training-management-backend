@@ -232,3 +232,114 @@ export const getTrainingsByConcentration = async (req, res) => {
     });
   }
 };
+
+// Cập nhật danh sách người tham gia đợt tập huấn
+export const updateTrainingParticipants = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { participationIds } = req.body;
+
+    // Kiểm tra dữ liệu đầu vào
+    if (!participationIds || !Array.isArray(participationIds)) {
+      return res.status(400).json({
+        success: false,
+        message: "Danh sách người tham gia không hợp lệ",
+      });
+    }
+
+    // Kiểm tra training tồn tại
+    const training = await prisma.training.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!training) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đợt tập huấn",
+      });
+    }
+
+    // 1. Lấy danh sách người đang tham gia
+    const currentParticipants = await prisma.trainingParticipant.findMany({
+      where: {
+        training_id: parseInt(id),
+      },
+      select: {
+        participation_id: true,
+      },
+    });
+
+    const currentIds = currentParticipants.map((p) => p.participation_id);
+    const newIds = participationIds.map((id) => parseInt(id));
+
+    // 2. Tìm những người cần thêm mới và những người cần xóa
+    const idsToAdd = newIds.filter((id) => !currentIds.includes(id));
+    const idsToRemove = currentIds.filter((id) => !newIds.includes(id));
+
+    // 3. Thực hiện các thao tác trong transaction
+    await prisma.$transaction(async (tx) => {
+      // Xóa những người không còn trong danh sách
+      if (idsToRemove.length > 0) {
+        await tx.trainingParticipant.deleteMany({
+          where: {
+            training_id: parseInt(id),
+            participation_id: {
+              in: idsToRemove,
+            },
+          },
+        });
+      }
+
+      // Thêm những người mới
+      if (idsToAdd.length > 0) {
+        await tx.trainingParticipant.createMany({
+          data: idsToAdd.map((participation_id) => ({
+            training_id: parseInt(id),
+            participation_id,
+            created_by: req.user.id,
+          })),
+        });
+      }
+    });
+
+    // 4. Lấy danh sách đã cập nhật để trả về
+    const updatedParticipants = await prisma.trainingParticipant.findMany({
+      where: {
+        training_id: parseInt(id),
+      },
+      include: {
+        participation: {
+          include: {
+            person: true,
+            role: true,
+            organization: true,
+          },
+        },
+      },
+    });
+
+    // Format gender trong response
+    const formattedParticipants = updatedParticipants.map((p) => ({
+      ...p,
+      participation: {
+        ...p.participation,
+        person: {
+          ...p.participation.person,
+          gender: formatGender(p.participation.person.gender),
+        },
+      },
+    }));
+
+    res.json({
+      success: true,
+      message: "Cập nhật danh sách người tham gia thành công",
+      data: formattedParticipants,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
