@@ -245,12 +245,14 @@ export const deleteCompetition = async (req, res) => {
 export const addParticipantToCompetition = async (req, res) => {
   try {
     const { id } = req.params;
-    const { participation_id, note } = req.body;
+    const { participation_id, startDate, endDate, note } = req.body;
 
     const participant = await prisma.competitionParticipant.create({
       data: {
         competition_id: parseInt(id),
         participation_id: parseInt(participation_id),
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
         note: note || "",
         created_by: req.user.id,
       },
@@ -260,6 +262,12 @@ export const addParticipantToCompetition = async (req, res) => {
             person: true,
             role: true,
             organization: true,
+          },
+        },
+        creator: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
@@ -281,6 +289,94 @@ export const addParticipantToCompetition = async (req, res) => {
       success: true,
       message: "Thêm người tham gia thành công",
       data: formattedParticipant,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Cập nhật thông tin tham gia giải đấu
+export const updateCompetitionParticipant = async (req, res) => {
+  try {
+    const { id, participationId } = req.params;
+    const { startDate, endDate, note } = req.body;
+
+    const participant = await prisma.competitionParticipant.update({
+      where: {
+        participation_id_competition_id: {
+          participation_id: parseInt(participationId),
+          competition_id: parseInt(id),
+        },
+      },
+      data: {
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        note,
+      },
+      include: {
+        participation: {
+          include: {
+            person: true,
+            role: true,
+            organization: true,
+          },
+        },
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Format gender trong response
+    const formattedParticipant = {
+      ...participant,
+      participation: {
+        ...participant.participation,
+        person: {
+          ...participant.participation.person,
+          gender: formatGender(participant.participation.person.gender),
+        },
+      },
+    };
+
+    res.json({
+      success: true,
+      message: "Cập nhật thông tin tham gia thành công",
+      data: formattedParticipant,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Xóa người tham gia khỏi giải đấu
+export const removeCompetitionParticipant = async (req, res) => {
+  try {
+    const { id, participationId } = req.params;
+
+    await prisma.competitionParticipant.delete({
+      where: {
+        participation_id_competition_id: {
+          participation_id: parseInt(participationId),
+          competition_id: parseInt(id),
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Xóa người tham gia thành công",
     });
   } catch (error) {
     res.status(500).json({

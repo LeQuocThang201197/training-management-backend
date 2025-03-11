@@ -7,6 +7,8 @@ import {
   updateCompetition,
   deleteCompetition,
   addParticipantToCompetition,
+  updateCompetitionParticipant,
+  removeCompetitionParticipant,
 } from "../controllers/competition.controller.js";
 import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
@@ -25,6 +27,16 @@ router.get("/:id/participants", isAuthenticated, getCompetitionParticipants);
 router.get("/:id", isAuthenticated, getCompetitionDetail);
 router.put("/:id", isAuthenticated, updateCompetition);
 router.delete("/:id", isAuthenticated, deleteCompetition);
+router.put(
+  "/:id/participants/:participationId",
+  isAuthenticated,
+  updateCompetitionParticipant
+);
+router.delete(
+  "/:id/participants/:participationId",
+  isAuthenticated,
+  removeCompetitionParticipant
+);
 
 // Cuối cùng là các route gốc
 router.post("/", isAuthenticated, createCompetition);

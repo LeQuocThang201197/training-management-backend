@@ -327,7 +327,6 @@ model Competition {
   isForeign       Boolean       // true = Nước ngoài, false = Trong nước
   startDate       DateTime      // Ngày bắt đầu
   endDate         DateTime      // Ngày kết thúc
-  description     String?       // Mô tả chi tiết
   note            String?       // Ghi chú
   is_confirmed    Boolean   @default(false)  // Trạng thái xác nhận
   created_by      Int          
@@ -341,11 +340,12 @@ model Competition {
 
 // Bảng quản lý người tham gia thi đấu
 model CompetitionParticipant {
-  id                Int           @id @default(autoincrement())
   participation_id  Int          
   competition_id    Int          
   note             String?       
-  created_by       Int          // Đổi từ createdBy
+  startDate        DateTime      // Ngày bắt đầu tham gia
+  endDate          DateTime      // Ngày kết thúc tham gia
+  created_by       Int          
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
@@ -354,6 +354,6 @@ model CompetitionParticipant {
   competition      Competition  @relation(fields: [competition_id], references: [id])
   creator          User     @relation("creator", fields: [created_by], references: [id])
 
-  @@unique([participation_id, competition_id])
+  @@id([participation_id, competition_id])
   @@schema("training_management")
 }
