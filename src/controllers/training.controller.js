@@ -265,11 +265,11 @@ export const getTrainingsByConcentration = async (req, res) => {
   }
 };
 
-// Cập nhật danh sách người tham gia đợt tập huấn
+// Cập nhật danh sách người tham gia và note
 export const updateTrainingParticipants = async (req, res) => {
   try {
     const { id } = req.params;
-    const { participationIds } = req.body;
+    const { participationIds, notes } = req.body; // notes là optional
 
     // Kiểm tra dữ liệu đầu vào
     if (!participationIds || !Array.isArray(participationIds)) {
@@ -291,38 +291,29 @@ export const updateTrainingParticipants = async (req, res) => {
       });
     }
 
-    // 1. Lấy danh sách người đang tham gia
-    const currentParticipants = await prisma.trainingParticipant.findMany({
-      where: {
-        training_id: parseInt(id),
-      },
-      select: {
-        participation_id: true,
-      },
-    });
-
-    const currentIds = currentParticipants.map((p) => p.participation_id);
-    const newIds = participationIds.map((id) => parseInt(id));
-
-    // 2. Tìm những người cần thêm mới và những người cần xóa
-    const idsToAdd = newIds.filter((id) => !currentIds.includes(id));
-    const idsToRemove = currentIds.filter((id) => !newIds.includes(id));
-
-    // 3. Thực hiện các thao tác trong transaction
+    // Thực hiện các thao tác trong transaction
     await prisma.$transaction(async (tx) => {
-      // Xóa những người không còn trong danh sách
+      // 1. Xóa những người không còn trong danh sách
+      const currentParticipants = await tx.trainingParticipant.findMany({
+        where: { training_id: parseInt(id) },
+        select: { participation_id: true },
+      });
+
+      const currentIds = currentParticipants.map((p) => p.participation_id);
+      const newIds = participationIds.map((id) => parseInt(id));
+      const idsToRemove = currentIds.filter((id) => !newIds.includes(id));
+
       if (idsToRemove.length > 0) {
         await tx.trainingParticipant.deleteMany({
           where: {
             training_id: parseInt(id),
-            participation_id: {
-              in: idsToRemove,
-            },
+            participation_id: { in: idsToRemove },
           },
         });
       }
 
-      // Thêm những người mới
+      // 2. Thêm những người mới
+      const idsToAdd = newIds.filter((id) => !currentIds.includes(id));
       if (idsToAdd.length > 0) {
         await tx.trainingParticipant.createMany({
           data: idsToAdd.map((participation_id) => ({
@@ -331,6 +322,21 @@ export const updateTrainingParticipants = async (req, res) => {
             created_by: req.user.id,
           })),
         });
+      }
+
+      // 3. Cập nhật notes nếu có
+      if (notes && Array.isArray(notes)) {
+        for (const item of notes) {
+          await tx.trainingParticipant.update({
+            where: {
+              participation_id_training_id: {
+                participation_id: parseInt(item.participation_id),
+                training_id: parseInt(id),
+              },
+            },
+            data: { note: item.note },
+          });
+        }
       }
     });
 
@@ -363,7 +369,7 @@ export const updateTrainingParticipants = async (req, res) => {
       },
     });
 
-    // Format gender trong response
+    // Format response
     const formattedParticipants = updatedParticipants.map((p) => ({
       participation_id: p.participation_id,
       training_id: p.training_id,
