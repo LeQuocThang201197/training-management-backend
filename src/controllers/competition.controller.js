@@ -7,8 +7,17 @@ const formatGender = (gender) => {
 // Tạo giải đấu mới
 export const createCompetition = async (req, res) => {
   try {
-    const { name, location, isForeign, startDate, endDate, description, note } =
-      req.body;
+    const {
+      name,
+      location,
+      isForeign,
+      startDate,
+      endDate,
+      description,
+      note,
+      is_confirmed,
+      concentration_id,
+    } = req.body;
 
     const competition = await prisma.competition.create({
       data: {
@@ -19,6 +28,8 @@ export const createCompetition = async (req, res) => {
         endDate: new Date(endDate),
         description,
         note,
+        is_confirmed: is_confirmed || false,
+        concentration_id: parseInt(concentration_id),
         created_by: req.user.id,
       },
       include: {
@@ -26,6 +37,14 @@ export const createCompetition = async (req, res) => {
           select: {
             id: true,
             name: true,
+          },
+        },
+        concentration: {
+          select: {
+            id: true,
+            location: true,
+            startDate: true,
+            endDate: true,
           },
         },
       },
@@ -52,13 +71,7 @@ export const getCompetitionsByConcentration = async (req, res) => {
 
     const competitions = await prisma.competition.findMany({
       where: {
-        participants: {
-          some: {
-            participation: {
-              concentration_id: parseInt(concentrationId),
-            },
-          },
-        },
+        concentration_id: parseInt(concentrationId),
       },
       include: {
         creator: {
@@ -67,15 +80,49 @@ export const getCompetitionsByConcentration = async (req, res) => {
             name: true,
           },
         },
+        concentration: {
+          select: {
+            id: true,
+            location: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+        participants: {
+          include: {
+            participation: {
+              include: {
+                person: true,
+                role: true,
+                organization: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         startDate: "asc",
       },
     });
 
+    // Format response
+    const formattedCompetitions = competitions.map((comp) => ({
+      ...comp,
+      participants: comp.participants.map((p) => ({
+        ...p,
+        participation: {
+          ...p.participation,
+          person: {
+            ...p.participation.person,
+            gender: formatGender(p.participation.person.gender),
+          },
+        },
+      })),
+    }));
+
     res.json({
       success: true,
-      data: competitions,
+      data: formattedCompetitions,
     });
   } catch (error) {
     res.status(500).json({

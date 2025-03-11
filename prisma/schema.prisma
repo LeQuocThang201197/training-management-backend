@@ -171,6 +171,7 @@ model Concentration {
   participants    PersonOnConcentration[] // Thêm relation field này
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  competitions    Competition[]  // Thêm opposite relation
 
   @@index([teamId])
   @@schema("training_management")
@@ -328,13 +329,16 @@ model Competition {
   startDate       DateTime      // Ngày bắt đầu
   endDate         DateTime      // Ngày kết thúc
   note            String?       // Ghi chú
-  is_confirmed    Boolean   @default(false)  // Trạng thái xác nhận
+  is_confirmed    Boolean       @default(false)  // Trạng thái xác nhận
+  concentration_id Int          // ID của đợt tập trung
   created_by      Int          
-  creator         User     @relation("creator", fields: [created_by], references: [id])
+  creator         User          @relation("creator", fields: [created_by], references: [id])
+  concentration   Concentration @relation(fields: [concentration_id], references: [id])
   participants    CompetitionParticipant[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
+  @@index([concentration_id])
   @@schema("training_management")
 }
 
