@@ -135,6 +135,19 @@ export const getConcentrations = async (req, res) => {
             },
           },
         },
+        competitions: {
+          include: {
+            participants: {
+              include: {
+                participation: {
+                  include: {
+                    role: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: {
         startDate: "desc",
@@ -180,11 +193,36 @@ export const getConcentrations = async (req, res) => {
         };
       });
 
+      // Format competitions và tính số lượng người tham gia
+      const formattedCompetitions = concentration.competitions.map(
+        (competition) => {
+          // Tính toán số lượng người tham gia competition theo role type
+          const competitionStats = competition.participants.reduce(
+            (acc, participant) => {
+              const roleType = participant.participation.role.type;
+              acc[roleType] = (acc[roleType] || 0) + 1;
+              return acc;
+            },
+            { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+          );
+
+          // Loại bỏ thông tin chi tiết participants
+          const { participants, ...competitionInfo } = competition;
+
+          return {
+            ...competitionInfo,
+            participantStats: competitionStats,
+            totalParticipants: competition.participants.length,
+          };
+        }
+      );
+
       return {
         ...concentration,
         team: formatTeamInfo(concentration.team),
         participantStats,
         trainings: formattedTrainings,
+        competitions: formattedCompetitions,
         participants: undefined, // Không trả về danh sách chi tiết người tham gia
       };
     });
