@@ -19,6 +19,15 @@ export const createPaper = async (req, res) => {
         date: new Date(date),
         file_name: file?.originalname,
         file_path: file?.path,
+        created_by: req.user.id,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -40,6 +49,14 @@ export const createPaper = async (req, res) => {
 export const getPapers = async (req, res) => {
   try {
     const papers = await prisma.paper.findMany({
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
       orderBy: {
         date: "desc",
       },
@@ -64,6 +81,14 @@ export const getPaperById = async (req, res) => {
     const { id } = req.params;
     const paper = await prisma.paper.findUnique({
       where: { id: parseInt(id) },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
 
     if (!paper) {
@@ -182,7 +207,7 @@ export const getConcentrationsByPaper = async (req, res) => {
                 sport: true,
               },
             },
-            submitter: {
+            creator: {
               select: {
                 id: true,
                 name: true,
@@ -253,7 +278,7 @@ export const attachConcentrationToPaper = async (req, res) => {
             data: {
               paper_id: parseInt(id),
               concentration_id: parseInt(concentrationId),
-              assignedBy: req.user.id,
+              assigned_by: req.user.id,
             },
             include: {
               concentration: {
@@ -263,7 +288,7 @@ export const attachConcentrationToPaper = async (req, res) => {
                       sport: true,
                     },
                   },
-                  submitter: {
+                  creator: {
                     select: {
                       id: true,
                       name: true,
