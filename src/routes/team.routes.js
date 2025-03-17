@@ -1,4 +1,5 @@
 import express from "express";
+import { checkPermission } from "../middlewares/auth.middleware.js";
 import {
   createTeam,
   getTeams,
@@ -10,9 +11,9 @@ import {
 const router = express.Router();
 
 router.get("/enums", getEnumValues);
-router.post("/", createTeam);
-router.get("/", getTeams);
-router.put("/:id", updateTeam);
-router.delete("/:id", deleteTeam);
+router.post("/", checkPermission("CREATE_TEAM"), createTeam);
+router.get("/", checkPermission("READ_TEAM"), getTeams);
+router.put("/:id", checkPermission("UPDATE_TEAM"), updateTeam);
+router.delete("/:id", checkPermission("DELETE_TEAM"), deleteTeam);
 
 export default router;

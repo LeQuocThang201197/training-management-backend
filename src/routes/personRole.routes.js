@@ -1,4 +1,5 @@
 import express from "express";
+import { checkPermission } from "../middlewares/auth.middleware.js";
 import {
   createPersonRole,
   getPersonRoles,
@@ -7,15 +8,14 @@ import {
   deletePersonRole,
   getPersonRoleTypes,
 } from "../controllers/personRole.controller.js";
-import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", isAuthenticated, createPersonRole);
-router.get("/", getPersonRoles);
+router.post("/", checkPermission("CREATE_PERSON_ROLE"), createPersonRole);
+router.get("/", checkPermission("READ_PERSON_ROLE"), getPersonRoles);
 router.get("/types", getPersonRoleTypes);
 router.get("/:id", getPersonRoleById);
-router.put("/:id", isAuthenticated, updatePersonRole);
-router.delete("/:id", isAuthenticated, deletePersonRole);
+router.put("/:id", checkPermission("UPDATE_PERSON_ROLE"), updatePersonRole);
+router.delete("/:id", checkPermission("DELETE_PERSON_ROLE"), deletePersonRole);
 
 export default router;

@@ -1,4 +1,5 @@
 import express from "express";
+import { checkPermission } from "../middlewares/auth.middleware.js";
 import {
   createCompetition,
   getCompetitionsByConcentration,
@@ -11,38 +12,49 @@ import {
   removeCompetitionParticipant,
   updateCompetitionParticipants,
 } from "../controllers/competition.controller.js";
-import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
 // Đặt route có pattern cụ thể trước
 router.get(
   "/concentration/:concentrationId",
-  isAuthenticated,
+  checkPermission("READ_COMPETITION"),
   getCompetitionsByConcentration
 );
 
 // Sau đó đến các route có pattern với :id
-router.post("/:id/participants", isAuthenticated, addParticipantToCompetition);
-router.get("/:id/participants", isAuthenticated, getCompetitionParticipants);
-router.get("/:id", isAuthenticated, getCompetitionDetail);
-router.put("/:id", isAuthenticated, updateCompetition);
-router.delete("/:id", isAuthenticated, deleteCompetition);
+router.post(
+  "/:id/participants",
+  checkPermission("UPDATE_COMPETITION"),
+  addParticipantToCompetition
+);
+router.get(
+  "/:id/participants",
+  checkPermission("READ_COMPETITION"),
+  getCompetitionParticipants
+);
+router.get("/:id", checkPermission("READ_COMPETITION"), getCompetitionDetail);
+router.put("/:id", checkPermission("UPDATE_COMPETITION"), updateCompetition);
+router.delete("/:id", checkPermission("DELETE_COMPETITION"), deleteCompetition);
 router.put(
   "/:id/participants/:participationId",
-  isAuthenticated,
+  checkPermission("UPDATE_COMPETITION"),
   updateCompetitionParticipant
 );
 router.delete(
   "/:id/participants/:participationId",
-  isAuthenticated,
+  checkPermission("DELETE_COMPETITION"),
   removeCompetitionParticipant
 );
 
 // Cập nhật danh sách người tham gia
-router.put("/:id/participants", isAuthenticated, updateCompetitionParticipants);
+router.put(
+  "/:id/participants",
+  checkPermission("UPDATE_COMPETITION"),
+  updateCompetitionParticipants
+);
 
 // Cuối cùng là các route gốc
-router.post("/", isAuthenticated, createCompetition);
+router.post("/", checkPermission("CREATE_COMPETITION"), createCompetition);
 
 export default router;

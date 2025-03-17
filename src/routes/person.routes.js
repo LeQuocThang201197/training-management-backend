@@ -1,4 +1,5 @@
 import express from "express";
+import { checkPermission } from "../middlewares/auth.middleware.js";
 import {
   createPerson,
   getPersons,
@@ -10,7 +11,6 @@ import {
   updatePersonParticipation,
   getPersonsByName,
 } from "../controllers/person.controller.js";
-import { checkPermission } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
