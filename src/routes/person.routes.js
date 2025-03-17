@@ -10,25 +10,25 @@ import {
   updatePersonParticipation,
   getPersonsByName,
 } from "../controllers/person.controller.js";
-import { isAuthenticated } from "../middlewares/auth.middleware.js";
+import { checkPermission } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", createPerson);
-router.get("/", getPersons);
-router.get("/search", getPersonsByName);
-router.get("/:id", getPersonById);
-router.put("/:id", updatePerson);
-router.delete("/:id", deletePerson);
+router.post("/", checkPermission("CREATE_PERSON"), createPerson);
+router.get("/", checkPermission("READ_PERSON"), getPersons);
+router.get("/search", checkPermission("READ_PERSON"), getPersonsByName);
+router.get("/:id", checkPermission("READ_PERSON"), getPersonById);
+router.put("/:id", checkPermission("UPDATE_PERSON"), updatePerson);
+router.delete("/:id", checkPermission("DELETE_PERSON"), deletePerson);
 router.get("/:id/participations", getPersonParticipations);
 router.post(
   "/:id/participations",
-  isAuthenticated,
+  checkPermission("ATTACH_PERSON_TO_CONCENTRATION"),
   attachPersonToConcentration
 );
 router.put(
   "/:id/participations/:participationId",
-  isAuthenticated,
+  checkPermission("UPDATE_PERSON_PARTICIPATION"),
   updatePersonParticipation
 );
 

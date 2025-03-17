@@ -32,6 +32,7 @@ export const createPerson = async (req, res) => {
         gender: gender === "Nam",
         phone,
         email,
+        created_by: req.user.id,
       },
     });
 

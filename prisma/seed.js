@@ -1,22 +1,66 @@
-import { PrismaClient } from "@prisma/client";
-import { organizations } from "./seeds/organizations.js";
-
-const prisma = new PrismaClient();
+import { prisma } from "../src/config/prisma.js";
+import { permissions } from "./seeds/permissions.js";
+import { roles } from "./seeds/roles.js";
 
 async function main() {
-  // Seed organizations
-  for (const org of organizations) {
-    await prisma.organization.create({
-      data: org,
+  console.log("Starting seed...");
+
+  // Get existing permissions from database
+  console.log("Getting existing permissions...");
+  const existingPermissions = await prisma.permission.findMany();
+  const permissionMap = {};
+  existingPermissions.forEach((p) => {
+    permissionMap[p.name] = p.id;
+  });
+
+  // Create or update roles and their permissions
+  console.log("Creating/updating roles and permissions...");
+  for (const role of roles) {
+    const { permissions: rolePermissions, ...roleData } = role;
+
+    // Check if role exists
+    const existingRole = await prisma.role.findUnique({
+      where: { name: roleData.name },
     });
+
+    let roleId;
+    if (existingRole) {
+      // Update existing role
+      await prisma.role.update({
+        where: { id: existingRole.id },
+        data: roleData,
+      });
+      roleId = existingRole.id;
+
+      // Delete existing role permissions
+      await prisma.rolePermission.deleteMany({
+        where: { role_id: roleId },
+      });
+    } else {
+      // Create new role
+      const createdRole = await prisma.role.create({
+        data: roleData,
+      });
+      roleId = createdRole.id;
+    }
+
+    // Create new role permissions
+    if (rolePermissions && rolePermissions.length > 0) {
+      await prisma.rolePermission.createMany({
+        data: rolePermissions.map((permissionName) => ({
+          role_id: roleId,
+          permission_id: permissionMap[permissionName],
+        })),
+      });
+    }
   }
 
-  console.log("Seeded organizations successfully");
+  console.log("Seed completed successfully!");
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("Error during seed:", e);
     process.exit(1);
   })
   .finally(async () => {

@@ -6,7 +6,7 @@ export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Kiểm tra email đã tồn tại
+    // Check if email exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -14,51 +14,45 @@ export const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "Email đã được sử dụng",
+        message: "Email already in use",
       });
     }
 
-    // Mã hóa password
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Tạo user mới với roleId = 6 (Khách)
+    // Create new user
     const newUser = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
-        roleId: 6, // Tự động gán role Khách
-      },
-      include: {
-        role: true,
       },
     });
 
-    // Loại bỏ password trước khi trả về
+    // Remove password from response
     const { password: _, ...userWithoutPassword } = newUser;
 
     res.status(201).json({
       success: true,
-      message: "Đăng ký thành công",
+      message: "Registration successful",
       data: userWithoutPassword,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Lỗi server",
+      message: "Server error",
       error: error.message,
     });
   }
 };
 
 export const login = (req, res, next) => {
-  console.log("Login request from:", req.headers.origin);
-
-  passport.authenticate("local", (err, user, info) => {
+  passport.authenticate("local", async (err, user, info) => {
     if (err) {
       return res.status(500).json({
         success: false,
-        message: "Lỗi server",
+        message: "Server error",
         error: err.message,
       });
     }
@@ -70,11 +64,11 @@ export const login = (req, res, next) => {
       });
     }
 
-    req.logIn(user, (err) => {
+    req.logIn(user, async (err) => {
       if (err) {
         return res.status(500).json({
           success: false,
-          message: "Lỗi server",
+          message: "Server error",
           error: err.message,
         });
       }
@@ -87,41 +81,227 @@ export const login = (req, res, next) => {
         maxAge: 24 * 60 * 60 * 1000,
       });
 
-      return res.json({
+      // Get user's roles and permissions
+      const userRoles = await prisma.userRole.findMany({
+        where: { user_id: user.id },
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  permission: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = user;
+
+      res.json({
         success: true,
-        message: "Đăng nhập thành công",
-        data: { user },
+        message: "Login successful",
+        data: {
+          user: {
+            ...userWithoutPassword,
+            roles: userRoles.map((ur) => ur.role.name),
+            permissions: [
+              ...new Set(
+                userRoles.flatMap((ur) =>
+                  ur.role.permissions.map((rp) => rp.permission.name)
+                )
+              ),
+            ],
+          },
+        },
       });
     });
   })(req, res, next);
 };
 
+// New role management functions
+export const getAllRoles = async (req, res) => {
+  try {
+    const roles = await prisma.role.findMany({
+      include: {
+        permissions: {
+          include: {
+            permission: true,
+          },
+        },
+      },
+    });
+    res.json({ success: true, data: roles });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const getAllPermissions = async (req, res) => {
+  try {
+    const permissions = await prisma.permission.findMany();
+    res.json({ success: true, data: permissions });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const createRole = async (req, res) => {
+  try {
+    const { name, description, permissions } = req.body;
+
+    const role = await prisma.role.create({
+      data: {
+        name,
+        description,
+        permissions: {
+          create: permissions.map((permissionId) => ({
+            permission: { connect: { id: permissionId } },
+          })),
+        },
+      },
+    });
+
+    res.json({ success: true, data: role });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const updateRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, permissions } = req.body;
+
+    // Delete existing permissions
+    await prisma.rolePermission.deleteMany({
+      where: { role_id: parseInt(id) },
+    });
+
+    // Update role and add new permissions
+    const role = await prisma.role.update({
+      where: { id: parseInt(id) },
+      data: {
+        name,
+        description,
+        permissions: {
+          create: permissions.map((permissionId) => ({
+            permission: { connect: { id: permissionId } },
+          })),
+        },
+      },
+    });
+
+    res.json({ success: true, data: role });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// Keep existing logout and verifyAuth functions
 export const logout = (req, res) => {
   req.logout((err) => {
     if (err) {
       return res.status(500).json({
         success: false,
-        message: "Lỗi server",
+        message: "Server error",
         error: err.message,
       });
     }
     res.json({
       success: true,
-      message: "Đăng xuất thành công",
+      message: "Logout successful",
     });
   });
 };
 
-export const verifyAuth = (req, res) => {
+export const verifyAuth = async (req, res) => {
   if (req.isAuthenticated()) {
+    // Get user's roles and permissions
+    const userRoles = await prisma.userRole.findMany({
+      where: { user_id: req.user.id },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = req.user;
+
     res.json({
       success: true,
-      data: { user: req.user },
+      data: {
+        user: {
+          ...userWithoutPassword,
+          roles: userRoles.map((ur) => ur.role.name),
+          permissions: [
+            ...new Set(
+              userRoles.flatMap((ur) =>
+                ur.role.permissions.map((rp) => rp.permission.name)
+              )
+            ),
+          ],
+        },
+      },
     });
   } else {
     res.status(401).json({
       success: false,
-      message: "Chưa đăng nhập",
+      message: "Not authenticated",
+    });
+  }
+};
+
+export const assignRole = async (req, res) => {
+  try {
+    const { userId, roleId } = req.body;
+
+    const userRole = await prisma.userRole.create({
+      data: {
+        user_id: userId,
+        role_id: roleId,
+      },
+      include: {
+        role: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Role assigned successfully",
+      data: userRole,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
     });
   }
 };
