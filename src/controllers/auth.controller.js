@@ -334,22 +334,54 @@ export const verifyAuth = async (req, res) => {
 
 export const assignRole = async (req, res) => {
   try {
-    const { userId, roleId } = req.body;
+    const userId = parseInt(req.params.id); // Get userId from params instead of body
+    const { roles } = req.body; // Expect 'roles' array in body
 
-    const userRole = await prisma.userRole.create({
-      data: {
+    // Validate input
+    if (!roles || !Array.isArray(roles)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid roles data. Expected an array of role IDs",
+      });
+    }
+
+    // Delete existing user roles first
+    await prisma.userRole.deleteMany({
+      where: { user_id: userId },
+    });
+
+    // Create new user roles
+    await prisma.userRole.createMany({
+      data: roles.map((roleId) => ({
         user_id: userId,
         role_id: roleId,
-      },
+      })),
+    });
+
+    // Get updated user with roles for response
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: userId },
       include: {
-        role: true,
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
     res.json({
       success: true,
-      message: "Role assigned successfully",
-      data: userRole,
+      message: "User roles updated successfully",
+      data: updatedUser,
     });
   } catch (error) {
     res.status(500).json({

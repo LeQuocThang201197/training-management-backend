@@ -30,7 +30,7 @@ router.put(
   checkPermission("ADMIN"),
   updateRolePermissions
 );
-router.post("/roles/assign", checkPermission("ADMIN"), assignRole);
+router.put("/users/:id/roles", checkPermission("ADMIN"), assignRole);
 router.get("/users", checkPermission("ADMIN"), getUsers);
 router.delete("/roles/:id", checkPermission("ADMIN"), deleteRole);
 
