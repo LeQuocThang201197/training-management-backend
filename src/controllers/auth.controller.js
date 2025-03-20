@@ -367,6 +367,7 @@ export const getUsers = async (req, res) => {
         id: true,
         email: true,
         name: true,
+        createdAt: true,
         roles: {
           include: {
             role: {
@@ -380,6 +381,9 @@ export const getUsers = async (req, res) => {
             },
           },
         },
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
