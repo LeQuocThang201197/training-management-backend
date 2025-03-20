@@ -158,21 +158,20 @@ export const getAllPermissions = async (req, res) => {
 
 export const createRole = async (req, res) => {
   try {
-    const { name, description, permissions } = req.body;
+    const { name, description } = req.body;
 
     const role = await prisma.role.create({
       data: {
         name,
         description,
-        permissions: {
-          create: permissions.map((permissionId) => ({
-            permission: { connect: { id: permissionId } },
-          })),
-        },
       },
     });
 
-    res.json({ success: true, data: role });
+    res.json({
+      success: true,
+      message: "Role created successfully",
+      data: role,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
