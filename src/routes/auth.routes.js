@@ -11,6 +11,7 @@ import {
   assignRole,
   getUsers,
   updateRolePermissions,
+  deleteRole,
 } from "../controllers/auth.controller.js";
 import { checkPermission } from "../middlewares/auth.middleware.js";
 
@@ -31,5 +32,6 @@ router.put(
 );
 router.post("/roles/assign", checkPermission("ADMIN"), assignRole);
 router.get("/users", checkPermission("ADMIN"), getUsers);
+router.delete("/roles/:id", checkPermission("ADMIN"), deleteRole);
 
 export default router;

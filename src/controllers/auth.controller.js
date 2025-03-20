@@ -395,3 +395,36 @@ export const getUsers = async (req, res) => {
     });
   }
 };
+
+export const deleteRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // First delete all role permissions
+    await prisma.rolePermission.deleteMany({
+      where: { role_id: parseInt(id) },
+    });
+
+    // Then delete all user roles
+    await prisma.userRole.deleteMany({
+      where: { role_id: parseInt(id) },
+    });
+
+    // Finally delete the role
+    const role = await prisma.role.delete({
+      where: { id: parseInt(id) },
+    });
+
+    res.json({
+      success: true,
+      message: "Role deleted successfully",
+      data: role,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
