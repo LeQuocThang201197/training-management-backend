@@ -11,23 +11,37 @@ passport.use(
     },
     async (email, password, done) => {
       try {
-        // Tìm user theo email
+        // Find user by email
         const user = await prisma.user.findUnique({
           where: { email },
-          include: { role: true },
+          include: {
+            roles: {
+              include: {
+                role: {
+                  include: {
+                    permissions: {
+                      include: {
+                        permission: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         });
 
         if (!user) {
           return done(null, false, { message: "Email không tồn tại" });
         }
 
-        // Kiểm tra password
+        // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
           return done(null, false, { message: "Mật khẩu không đúng" });
         }
 
-        // Loại bỏ password trước khi serialize
+        // Remove password before serializing
         const { password: _, ...userWithoutPassword } = user;
         return done(null, userWithoutPassword);
       } catch (error) {
@@ -37,17 +51,31 @@ passport.use(
   )
 );
 
-// Serialize user để lưu vào session
+// Serialize user for session
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-// Deserialize user khi lấy từ session
+// Deserialize user from session
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id },
-      include: { role: true },
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
     const { password: _, ...userWithoutPassword } = user;
     done(null, userWithoutPassword);

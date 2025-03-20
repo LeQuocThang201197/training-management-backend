@@ -10,7 +10,6 @@ import {
   getConcentrationsByPaper,
   detachConcentrationFromPaper,
   attachConcentrationToPaper,
-  uploadPaperFile,
 } from "../controllers/paper.controller.js";
 import { upload } from "../config/multer.js";
 
@@ -21,13 +20,6 @@ router.post(
   checkPermission("CREATE_PAPER"),
   upload.single("file"),
   createPaper
-);
-
-router.post(
-  "/:id/upload",
-  checkPermission("UPDATE_PAPER"),
-  upload.single("file"),
-  uploadPaperFile
 );
 
 router.get("/", checkPermission("READ_PAPER"), getPapers);

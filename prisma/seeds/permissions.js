@@ -45,6 +45,39 @@ export const permissions = [
   { name: "READ_PAPER", description: "Xem thông tin văn bản" },
   { name: "UPDATE_PAPER", description: "Cập nhật thông tin văn bản" },
   { name: "DELETE_PAPER", description: "Xóa văn bản" },
+
+  // New permissions for Team
+  { name: "CREATE_TEAM", description: "Create new team" },
+  { name: "READ_TEAM", description: "View team information" },
+  { name: "UPDATE_TEAM", description: "Update team information" },
+  { name: "DELETE_TEAM", description: "Delete team" },
+
+  // Sport permissions
+  { name: "CREATE_SPORT", description: "Create new sport" },
+  { name: "READ_SPORT", description: "View sport information" },
+  { name: "UPDATE_SPORT", description: "Update sport information" },
+  { name: "DELETE_SPORT", description: "Delete sport" },
+
+  // Organization permissions
+  { name: "CREATE_ORGANIZATION", description: "Create new organization" },
+  { name: "READ_ORGANIZATION", description: "View organization information" },
+  {
+    name: "UPDATE_ORGANIZATION",
+    description: "Update organization information",
+  },
+  { name: "DELETE_ORGANIZATION", description: "Delete organization" },
+
+  // Person Role permissions
+  { name: "CREATE_PERSON_ROLE", description: "Create new person role" },
+  { name: "READ_PERSON_ROLE", description: "View person role information" },
+  { name: "UPDATE_PERSON_ROLE", description: "Update person role information" },
+  { name: "DELETE_PERSON_ROLE", description: "Delete person role" },
+
+  // Absence permissions
+  { name: "CREATE_ABSENCE", description: "Create new absence record" },
+  { name: "READ_ABSENCE", description: "View absence information" },
+  { name: "UPDATE_ABSENCE", description: "Update absence information" },
+  { name: "DELETE_ABSENCE", description: "Delete absence record" },
 ];
 
 export const ALL_PERMISSIONS = permissions.map((p) => p.name);

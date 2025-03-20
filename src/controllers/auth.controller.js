@@ -185,28 +185,83 @@ export const createRole = async (req, res) => {
 export const updateRole = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, permissions } = req.body;
+    const { name, description } = req.body;
+
+    // Just update role basic info without touching permissions
+    const role = await prisma.role.update({
+      where: { id: parseInt(id) },
+      data: {
+        name,
+        description,
+      },
+      include: {
+        permissions: {
+          include: {
+            permission: true,
+          },
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Role updated successfully",
+      data: role,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const updateRolePermissions = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { permissions } = req.body;
+
+    // Validate input
+    if (!permissions || !Array.isArray(permissions)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid permissions data. Expected an array of permission IDs",
+      });
+    }
 
     // Delete existing permissions
     await prisma.rolePermission.deleteMany({
       where: { role_id: parseInt(id) },
     });
 
-    // Update role and add new permissions
+    // Add new permissions
     const role = await prisma.role.update({
       where: { id: parseInt(id) },
       data: {
-        name,
-        description,
         permissions: {
-          create: permissions.map((permissionId) => ({
-            permission: { connect: { id: permissionId } },
-          })),
+          createMany: {
+            data: permissions.map((permissionId) => ({
+              permission_id: permissionId,
+            })),
+          },
+        },
+      },
+      include: {
+        permissions: {
+          include: {
+            permission: true,
+          },
         },
       },
     });
 
-    res.json({ success: true, data: role });
+    res.json({
+      success: true,
+      message: "Role permissions updated successfully",
+      data: role,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -296,6 +351,42 @@ export const assignRole = async (req, res) => {
       success: true,
       message: "Role assigned successfully",
       data: userRole,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const getUsers = async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      data: users,
     });
   } catch (error) {
     res.status(500).json({

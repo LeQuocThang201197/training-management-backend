@@ -8,10 +8,17 @@ async function main() {
   // Get existing permissions from database
   console.log("Getting existing permissions...");
   const existingPermissions = await prisma.permission.findMany();
-  const permissionMap = {};
-  existingPermissions.forEach((p) => {
-    permissionMap[p.name] = p.id;
-  });
+  const existingPermissionNames = existingPermissions.map((p) => p.name);
+
+  console.log("Creating new permissions...");
+  const newPermissions = permissions.filter(
+    (p) => !existingPermissionNames.includes(p.name)
+  );
+  for (const permission of newPermissions) {
+    await prisma.permission.create({
+      data: permission,
+    });
+  }
 
   // Create or update roles and their permissions
   console.log("Creating/updating roles and permissions...");
@@ -49,7 +56,7 @@ async function main() {
       await prisma.rolePermission.createMany({
         data: rolePermissions.map((permissionName) => ({
           role_id: roleId,
-          permission_id: permissionMap[permissionName],
+          permission_id: existingPermissions.find(p => p.name === permissionName).id,
         })),
       });
     }

@@ -9,6 +9,8 @@ import {
   createRole,
   updateRole,
   assignRole,
+  getUsers,
+  updateRolePermissions,
 } from "../controllers/auth.controller.js";
 import { checkPermission } from "../middlewares/auth.middleware.js";
 
@@ -22,6 +24,12 @@ router.get("/permissions", checkPermission("ADMIN"), getAllPermissions);
 router.get("/roles", checkPermission("ADMIN"), getAllRoles);
 router.post("/roles", checkPermission("ADMIN"), createRole);
 router.put("/roles/:id", checkPermission("ADMIN"), updateRole);
+router.put(
+  "/roles/:id/permissions",
+  checkPermission("ADMIN"),
+  updateRolePermissions
+);
 router.post("/roles/assign", checkPermission("ADMIN"), assignRole);
+router.get("/users", checkPermission("ADMIN"), getUsers);
 
 export default router;
