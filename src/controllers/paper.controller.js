@@ -52,6 +52,8 @@ export const getPapers = async (req, res) => {
       page = 1,
       limit = 10,
       search = "", // Search by content, publisher, or number
+      sortBy = "date",
+      order = "desc",
     } = req.query;
 
     // Build where condition
@@ -71,17 +73,34 @@ export const getPapers = async (req, res) => {
             },
           },
           {
-            // Add search by number
-            number: isNaN(parseInt(search)) ? undefined : parseInt(search),
+            // Search number as string
+            number: {
+              equals: isNaN(parseInt(search)) ? undefined : parseInt(search),
+            },
           },
-        ].filter(Boolean), // Remove undefined conditions
+          {
+            // Also search number as string for partial matches
+            number: {
+              in: isNaN(parseInt(search))
+                ? undefined
+                : Array.from({ length: 10 }, (_, i) =>
+                    parseInt(search + i.toString())
+                  ),
+            },
+          },
+        ].filter(Boolean),
       }),
     };
+
+    // Validate sort order
+    const validOrder = ["asc", "desc"].includes(order.toLowerCase())
+      ? order.toLowerCase()
+      : "desc";
 
     // Get total count
     const total = await prisma.paper.count({ where });
 
-    // Get papers with pagination
+    // Get papers with pagination and sorting
     const papers = await prisma.paper.findMany({
       where,
       include: {
@@ -93,7 +112,7 @@ export const getPapers = async (req, res) => {
         },
       },
       orderBy: {
-        date: "desc", // Newest first
+        [sortBy]: validOrder,
       },
       skip: (parseInt(page) - 1) * parseInt(limit),
       take: parseInt(limit),
