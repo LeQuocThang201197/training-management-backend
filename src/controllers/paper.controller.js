@@ -51,7 +51,7 @@ export const getPapers = async (req, res) => {
     const {
       page = 1,
       limit = 10,
-      search = "", // Search by content or publisher
+      search = "", // Search by content, publisher, or number
     } = req.query;
 
     // Build where condition
@@ -70,7 +70,11 @@ export const getPapers = async (req, res) => {
               mode: "insensitive",
             },
           },
-        ],
+          {
+            // Add search by number
+            number: isNaN(parseInt(search)) ? undefined : parseInt(search),
+          },
+        ].filter(Boolean), // Remove undefined conditions
       }),
     };
 
