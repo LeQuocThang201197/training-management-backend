@@ -48,7 +48,38 @@ export const createPaper = async (req, res) => {
 // Lấy danh sách văn bản
 export const getPapers = async (req, res) => {
   try {
+    const {
+      page = 1,
+      limit = 10,
+      search = "", // Search by content or publisher
+    } = req.query;
+
+    // Build where condition
+    const where = {
+      ...(search && {
+        OR: [
+          {
+            content: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+          {
+            publisher: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        ],
+      }),
+    };
+
+    // Get total count
+    const total = await prisma.paper.count({ where });
+
+    // Get papers with pagination
     const papers = await prisma.paper.findMany({
+      where,
       include: {
         creator: {
           select: {
@@ -58,18 +89,26 @@ export const getPapers = async (req, res) => {
         },
       },
       orderBy: {
-        date: "desc",
+        date: "desc", // Newest first
       },
+      skip: (parseInt(page) - 1) * parseInt(limit),
+      take: parseInt(limit),
     });
 
     res.json({
       success: true,
       data: papers,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Lỗi server",
+      message: "Server error",
       error: error.message,
     });
   }
