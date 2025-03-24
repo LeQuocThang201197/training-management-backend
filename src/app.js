@@ -20,21 +20,8 @@ const app = express();
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-
-      const allowedOrigins = [
-        "http://localhost:5173",
-        "http://192.168.1.16:5173",
-        "http://192.168.1.16",
-        "https://*.ngrok-free.app",
-      ];
-
-      const isNgrok = /^https:\/\/.*\.ngrok-free.app$/.test(origin);
-      if (allowedOrigins.includes(origin) || isNgrok) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
+      // Allow localhost for development
+      callback(null, "http://localhost:5173");
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -56,11 +43,11 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    proxy: true, // Cần thiết vì dùng ngrok
+    proxy: false, // Not needed for local development
     cookie: {
       httpOnly: true,
-      secure: true, // Giữ true vì backend qua HTTPS
-      sameSite: "none", // Cần thiết vì cross-origin
+      secure: false, // Set to false for local HTTP
+      sameSite: "lax", // Default for same-origin
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
