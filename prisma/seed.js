@@ -56,7 +56,9 @@ async function main() {
       await prisma.rolePermission.createMany({
         data: rolePermissions.map((permissionName) => ({
           role_id: roleId,
-          permission_id: existingPermissions.find(p => p.name === permissionName).id,
+          permission_id: existingPermissions.find(
+            (p) => p.name === permissionName
+          ).id,
         })),
       });
     }

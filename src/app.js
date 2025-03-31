@@ -20,8 +20,12 @@ const app = express();
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow localhost for development
-      callback(null, "http://localhost:5173");
+      // Allow both local and production frontend
+      const allowedOrigins = [
+        "http://localhost:5173",
+        process.env.FRONTEND_URL, // Add your Vercel frontend URL here
+      ];
+      callback(null, allowedOrigins);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -43,11 +47,11 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    proxy: false, // Not needed for local development
+    proxy: true, // Enable for Render.com
     cookie: {
       httpOnly: true,
-      secure: false, // Set to false for local HTTP
-      sameSite: "lax", // Default for same-origin
+      secure: process.env.NODE_ENV === "production", // Enable in production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000,
     },
   })

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: training-management-api
+    env: node
+    buildCommand: npm install
+    startCommand: node src/app.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Add manually in Render dashboard
+      - key: SESSION_SECRET
+        sync: false # Add manually in Render dashboard
+      - key: FRONTEND_URL
+        sync: false # Add manually in Render dashboard
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false

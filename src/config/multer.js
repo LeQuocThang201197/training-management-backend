@@ -1,14 +1,24 @@
 import multer from "multer";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/papers/"); // Thư mục lưu file
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
 
+// Memory storage instead of disk
+const storage = multer.memoryStorage();
 export const upload = multer({ storage });
+
+// New function to upload to Supabase
+export const uploadToSupabase = async (file, path) => {
+  const { data, error } = await supabase.storage
+    .from("papers")
+    .upload(path, file.buffer, {
+      contentType: file.mimetype,
+      upsert: true,
+    });
+
+  if (error) throw error;
+  return data;
+};
