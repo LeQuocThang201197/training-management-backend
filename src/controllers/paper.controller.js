@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import { formatTeamInfo } from "../constants/index.js";
+import { upload, uploadFile } from "../config/storage.js";
 
 // Tạo văn bản mới
 export const createPaper = async (req, res) => {
@@ -7,6 +8,9 @@ export const createPaper = async (req, res) => {
     const { number, code, publisher, type, content, related_year, date } =
       req.body;
     const file = req.file;
+
+    // Upload file using common function
+    const fileData = await uploadFile(file, filePath);
 
     const newPaper = await prisma.paper.create({
       data: {
@@ -18,7 +22,10 @@ export const createPaper = async (req, res) => {
         related_year: parseInt(related_year),
         date: new Date(date),
         file_name: file?.originalname,
-        file_path: file?.path,
+        file_path:
+          process.env.NODE_ENV === "development"
+            ? fileData.path
+            : `papers/${fileData.path}`,
         created_by: req.user.id,
       },
       include: {

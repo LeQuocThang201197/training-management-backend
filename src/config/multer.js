@@ -14,10 +14,7 @@ export const upload = multer({ storage });
 export const uploadToSupabase = async (file, path) => {
   const { data, error } = await supabase.storage
     .from("papers")
-    .upload(path, file.buffer, {
-      contentType: file.mimetype,
-      upsert: true,
-    });
+    .upload(path, file.buffer);
 
   if (error) throw error;
   return data;
