@@ -33,7 +33,7 @@ model PersonRole {
 }
 
 model User {
-  id        String    @id @default(uuid())
+  id        Int       @id @default(autoincrement())
   email     String    @unique
   password  String
   name      String
@@ -53,14 +53,15 @@ model User {
   assigned_papers                  PaperOnConcentration[]   @relation("assigner")
   assigned_participants            PersonOnConcentration[]  @relation("assigner")
 
-  @@schema("auth") 
+  @@map("User")
+  @@schema("auth")
 }
 
 model Profile {
   id      Int     @id @default(autoincrement())
   phone   String?
   address String?
-  userId  String  @unique  // Changed from Int to String to match UUID
+  userId  Int     @unique
   user    User    @relation(fields: [userId], references: [id])
 
   @@schema("auth")
@@ -134,7 +135,7 @@ model Paper {
   date           DateTime
   file_name      String? // Tên file gốc
   file_path      String? // Đường dẫn lưu file
-  created_by     String
+  created_by     Int
   creator        User    @relation("creator", fields: [created_by], references: [id])
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
@@ -153,7 +154,7 @@ model Concentration {
   startDate       DateTime // Ngày bắt đầu tập trung
   endDate         DateTime // Ngày kết thúc tập trung
   note            String // Ghi chú
-  created_by      String
+  created_by      Int
   creator         User    @relation("creator", fields: [created_by], references: [id])
   trainings       Training[] // Các đợt tập huấn trong thời gian tập trung
   papers          PaperOnConcentration[] // Relation với bảng trung gian
@@ -175,7 +176,7 @@ model Training {
   note             String // Ghi chú
   concentration_id Int
   concentration    Concentration         @relation(fields: [concentration_id], references: [id])
-  created_by       String
+  created_by       Int
   creator          User    @relation("creator", fields: [created_by], references: [id])
   participants     TrainingParticipant[]
   createdAt        DateTime              @default(now())
@@ -189,7 +190,7 @@ model TrainingParticipant {
   participation_id Int
   training_id      Int
   note             String?
-  created_by       String
+  created_by       Int
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -207,7 +208,7 @@ model PaperOnConcentration {
   paper_id         Int
   concentration_id Int
   assignedAt       DateTime      @default(now())
-  assigned_by      String
+  assigned_by      Int
   assigner         User          @relation("assigner", fields: [assigned_by], references: [id])
   paper            Paper         @relation(fields: [paper_id], references: [id])
   concentration    Concentration @relation(fields: [concentration_id], references: [id])
@@ -263,7 +264,7 @@ model PersonOnConcentration {
   role_id                   Int // ID của vai trò
   organization_id           Int // ID của đơn vị trực thuộc
   note                      String? // Ghi chú (lý do thêm/bớt)
-  assigned_by               String
+  assigned_by               Int
   assigner                  User                     @relation("assigner", fields: [assigned_by], references: [id])
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
@@ -290,7 +291,7 @@ model AbsenceRecord {
   startDate        DateTime
   endDate          DateTime
   note             String?
-  created_by       String
+  created_by       Int
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
@@ -320,7 +321,7 @@ model Competition {
   note             String? // Ghi chú
   is_confirmed     Boolean                  @default(false) // Trạng thái xác nhận
   concentration_id Int // ID của đợt tập trung
-  created_by       String
+  created_by       Int
   creator          User                     @relation("creator", fields: [created_by], references: [id])
   concentration    Concentration            @relation(fields: [concentration_id], references: [id])
   participants     CompetitionParticipant[]
@@ -338,7 +339,7 @@ model CompetitionParticipant {
   note             String?
   startDate        DateTime // Ngày bắt đầu tham gia
   endDate          DateTime // Ngày kết thúc tham gia
-  created_by       String
+  created_by       Int
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -388,7 +389,7 @@ model RolePermission {
 }
 
 model UserRole {
-  user_id   String   // Changed from Int to String to match UUID
+  user_id   Int
   role_id   Int
   createdAt DateTime @default(now())
 
