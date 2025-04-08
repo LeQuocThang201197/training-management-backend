@@ -1,15 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url:
-        process.env.NODE_ENV === "production"
-          ? process.env.DIRECT_URL // Use DIRECT_URL in production
-          : process.env.DATABASE_URL, // Use pooled connection locally
-    },
-  },
-});
+const prisma = new PrismaClient();
 
 const connectDB = async () => {
   try {
