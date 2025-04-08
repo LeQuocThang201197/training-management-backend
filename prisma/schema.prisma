@@ -37,12 +37,12 @@ model User {
   email     String    @unique
   password  String
   name      String
-  roles     UserRole[] // Thêm relation với bảng UserRole
+  roles     UserRole[] 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   profile   Profile?
 
-  // Các relation mới thay thế các relation cũ
+  // Relations...
   created_papers                   Paper[]                  @relation("creator")
   created_concentrations           Concentration[]          @relation("creator")
   created_trainings                Training[]               @relation("creator")
@@ -53,9 +53,7 @@ model User {
   assigned_papers                  PaperOnConcentration[]   @relation("assigner")
   assigned_participants            PersonOnConcentration[]  @relation("assigner")
 
-  // Map to Supabase's auth.users table
-  @@map("users")
-  @@schema("auth")
+  @@schema("auth") 
 }
 
 model Profile {

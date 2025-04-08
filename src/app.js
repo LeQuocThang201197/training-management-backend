@@ -17,25 +17,40 @@ connectDB();
 const app = express();
 
 // CORS config
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow both local and production frontend
-      const allowedOrigins = [
-        "http://localhost:5173",
-        process.env.FRONTEND_URL, // Add your Vercel frontend URL here
-      ];
-      callback(null, allowedOrigins);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
-    exposedHeaders: ["set-cookie"],
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:5173", // Local frontend
+      process.env.FRONTEND_URL, // Production frontend
+    ];
+
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg =
+        "The CORS policy for this site does not allow access from the specified Origin.";
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+  ],
+  exposedHeaders: ["set-cookie"],
+  maxAge: 86400, // 24 hours
+};
+
+app.use(cors(corsOptions));
 
 // Thêm middleware để xử lý preflight requests
-app.options("*", cors());
+app.options("*", cors(corsOptions));
 
 app.use(cookieParser());
 app.use(express.json());
@@ -50,7 +65,7 @@ app.use(
     proxy: true, // Enable for Render.com
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Enable in production
+      secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000,
     },
