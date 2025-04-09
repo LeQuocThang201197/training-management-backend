@@ -23,8 +23,17 @@ const FRONTEND_URL =
 
 // CORS config
 const corsOptions = {
-  origin: [FRONTEND_URL],
-  credentials: true, // Cho phép gửi cookies
+  origin: FRONTEND_URL,
+  origin: function (origin, callback) {
+    console.log("Request origin:", origin);
+
+    if (!origin || origin === FRONTEND_URL) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
   exposedHeaders: ["set-cookie"],
