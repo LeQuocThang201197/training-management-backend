@@ -53,7 +53,7 @@ model User {
   assigned_papers                  PaperOnConcentration[]   @relation("assigner")
   assigned_participants            PersonOnConcentration[]  @relation("assigner")
 
-  @@map("User")
+  @@map("users")
   @@schema("auth")
 }
 
