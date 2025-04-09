@@ -2,7 +2,7 @@ services:
   - type: web
     name: training-management-api
     env: node
-    buildCommand: npm install
+    buildCommand: npm install && npx prisma generate
     startCommand: node src/app.js
     envVars:
       - key: NODE_ENV
