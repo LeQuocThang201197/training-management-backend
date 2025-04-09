@@ -16,21 +16,19 @@ connectDB();
 
 const app = express();
 
+const FRONTEND_URL =
+  process.env.NODE_ENV === "production"
+    ? process.env.FRONTEND_URL
+    : "http://localhost:5173";
+
 // CORS config
 const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      "http://localhost:5173", // Local frontend
-      process.env.FRONTEND_URL, // Production frontend
-    ];
-
-    callback(null, allowedOrigins.includes(origin));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  origin: [FRONTEND_URL],
+  credentials: true, // Cho phép gửi cookies
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
   exposedHeaders: ["set-cookie"],
-  maxAge: 86400, // 24 hours
+  maxAge: 86400, // Cache CORS preflight requests 24h
 };
 
 app.use(cors(corsOptions));
