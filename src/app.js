@@ -24,20 +24,10 @@ const FRONTEND_URL =
 // CORS config
 const corsOptions = {
   origin: FRONTEND_URL,
-  origin: function (origin, callback) {
-    console.log("Request origin:", origin);
-
-    if (!origin || origin === FRONTEND_URL) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
   exposedHeaders: ["set-cookie"],
-  maxAge: 86400, // Cache CORS preflight requests 24h
 };
 
 app.use(cors(corsOptions));
@@ -52,13 +42,11 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    proxy: true, // Enable for Render.com
+    proxy: true,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      domain:
-        process.env.NODE_ENV === "production" ? ".vercel.app" : "localhost",
+      secure: true,
+      sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
@@ -78,6 +66,9 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api", routes);
+
+// 3. Thêm trust proxy
+app.set("trust proxy", 1);
 
 const PORT = process.env.PORT || 8000;
 
