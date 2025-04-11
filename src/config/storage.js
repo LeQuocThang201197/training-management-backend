@@ -50,6 +50,15 @@ export const uploadFile = async (file, filePath) => {
       .upload(filePath, file.buffer);
 
     if (error) throw error;
-    return data;
+
+    // Lấy public URL của file
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("papers").getPublicUrl(data.path);
+
+    return {
+      path: publicUrl, // Trả về public URL thay vì path
+      filename: file.originalname,
+    };
   }
 };
