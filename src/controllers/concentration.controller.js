@@ -975,3 +975,24 @@ const getStartOfDay = () => {
   now.setHours(0, 0, 0, 0);
   return now;
 };
+
+// Thêm function mới
+export const getRooms = async (req, res) => {
+  try {
+    const rooms = Object.entries(MANAGEMENT_ROOMS).map(([value, label]) => ({
+      value,
+      label,
+    }));
+
+    res.json({
+      success: true,
+      data: rooms,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
