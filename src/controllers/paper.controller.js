@@ -9,8 +9,14 @@ export const createPaper = async (req, res) => {
       req.body;
     const file = req.file;
 
+    // Tạo filePath từ thông tin file
+    const filePath = file ? `${Date.now()}-${file.originalname}` : null;
+
     // Upload file using common function
-    const fileData = await uploadFile(file, filePath);
+    let fileData = null;
+    if (file) {
+      fileData = await uploadFile(file, filePath);
+    }
 
     const newPaper = await prisma.paper.create({
       data: {
@@ -22,10 +28,7 @@ export const createPaper = async (req, res) => {
         related_year: parseInt(related_year),
         date: new Date(date),
         file_name: file?.originalname,
-        file_path:
-          process.env.NODE_ENV === "development"
-            ? fileData.path
-            : `papers/${fileData.path}`,
+        file_path: fileData?.path,
         created_by: req.user.id,
       },
       include: {
