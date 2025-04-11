@@ -1,5 +1,5 @@
 import { prisma } from "../config/prisma.js";
-import { formatTeamInfo } from "../constants/index.js";
+import { formatTeamInfo, MANAGEMENT_ROOMS } from "../constants/index.js";
 import { Prisma } from "@prisma/client";
 
 // Tạo đợt tập trung mới
@@ -8,12 +8,21 @@ export const createConcentration = async (req, res) => {
     const {
       teamId,
       location,
+      room,
       startDate,
       endDate,
       related_year,
       sequence_number,
       note,
     } = req.body;
+
+    // Validate room
+    if (!Object.keys(MANAGEMENT_ROOMS).includes(room)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid management room",
+      });
+    }
 
     // Kiểm tra overlap với các đợt tập trung khác của team
     const existingConcentrations = await prisma.concentration.findMany({
@@ -42,6 +51,7 @@ export const createConcentration = async (req, res) => {
       data: {
         teamId: parseInt(teamId),
         location,
+        room,
         related_year: parseInt(related_year),
         sequence_number: parseInt(sequence_number),
         startDate: new Date(startDate),
@@ -68,6 +78,7 @@ export const createConcentration = async (req, res) => {
     const formattedConcentration = {
       ...newConcentration,
       team: formatTeamInfo(newConcentration.team),
+      room: MANAGEMENT_ROOMS[newConcentration.room],
     };
 
     res.status(201).json({
@@ -220,6 +231,7 @@ export const getConcentrations = async (req, res) => {
       return {
         ...concentration,
         team: formatTeamInfo(concentration.team),
+        room: MANAGEMENT_ROOMS[concentration.room],
         participantStats,
         trainings: formattedTrainings,
         competitions: formattedCompetitions,
@@ -316,6 +328,7 @@ export const getConcentrationById = async (req, res) => {
     const formattedConcentration = {
       ...concentration,
       team: formatTeamInfo(concentration.team),
+      room: MANAGEMENT_ROOMS[concentration.room],
     };
 
     res.json({
@@ -338,12 +351,21 @@ export const updateConcentration = async (req, res) => {
     const {
       teamId,
       location,
-      startDate,
-      endDate,
+      room,
       related_year,
       sequence_number,
+      startDate,
+      endDate,
       note,
     } = req.body;
+
+    // Validate room
+    if (room && !Object.keys(MANAGEMENT_ROOMS).includes(room)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid management room",
+      });
+    }
 
     // Validate và parse dates
     const parsedStartDate = new Date(startDate);
@@ -406,6 +428,7 @@ export const updateConcentration = async (req, res) => {
       data: {
         teamId: parseInt(teamId),
         location,
+        room,
         related_year: parseInt(related_year),
         sequence_number: parseInt(sequence_number),
         startDate: parsedStartDate,
@@ -431,6 +454,7 @@ export const updateConcentration = async (req, res) => {
     const formattedConcentration = {
       ...updatedConcentration,
       team: formatTeamInfo(updatedConcentration.team),
+      room: MANAGEMENT_ROOMS[updatedConcentration.room],
     };
 
     res.json({

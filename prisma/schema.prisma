@@ -89,7 +89,6 @@ model Team {
   sportId        Int
   sport          Sport           @relation(fields: [sportId], references: [id])
   type           TeamType
-  room           ManagementRoom
   gender         TeamGender      @default(MIXED)
   concentrations Concentration[]
   createdAt      DateTime        @default(now())
@@ -117,6 +116,7 @@ enum TeamType {
 }
 
 enum ManagementRoom {
+  ROOM
   ROOM_1 // Vụ 1
   ROOM_2 // Vụ 2
   ROOM_3 // Thể thao cho mọi người
@@ -146,22 +146,23 @@ model Paper {
 
 model Concentration {
   id              Int                     @id @default(autoincrement())
-  teamId          Int // Đội tập trung
+  teamId          Int
   team            Team                    @relation(fields: [teamId], references: [id])
-  location        String // Địa điểm tập trung
-  related_year    Int // Năm liên quan
-  sequence_number Int // Lần thứ mấy trong năm
-  startDate       DateTime // Ngày bắt đầu tập trung
-  endDate         DateTime // Ngày kết thúc tập trung
-  note            String // Ghi chú
+  location        String
+  room            ManagementRoom
+  related_year    Int
+  sequence_number Int
+  startDate       DateTime
+  endDate         DateTime
+  note            String
   created_by      Int
-  creator         User    @relation("creator", fields: [created_by], references: [id])
-  trainings       Training[] // Các đợt tập huấn trong thời gian tập trung
-  papers          PaperOnConcentration[] // Relation với bảng trung gian
-  participants    PersonOnConcentration[] // Thêm relation field này
+  creator         User                    @relation("creator", fields: [created_by], references: [id])
+  trainings       Training[]
+  papers          PaperOnConcentration[]
+  participants    PersonOnConcentration[]
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
-  competitions    Competition[] // Thêm opposite relation
+  competitions    Competition[]
 
   @@index([teamId])
   @@schema("training_management")

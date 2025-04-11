@@ -3,17 +3,12 @@ import { prisma } from "../config/prisma.js";
 import { TEAM_LABELS, formatTeamInfo } from "../constants/index.js";
 
 // Lấy các enum từ PrismaClient
-const { TeamType, ManagementRoom, TeamGender } = pkg;
+const { TeamType, TeamGender } = pkg;
 
 // Lấy danh sách enum values
 export const getEnumValues = async (req, res) => {
   try {
     const types = Object.entries(TEAM_LABELS.type).map(([value, label]) => ({
-      value,
-      label,
-    }));
-
-    const rooms = Object.entries(TEAM_LABELS.room).map(([value, label]) => ({
       value,
       label,
     }));
@@ -29,7 +24,6 @@ export const getEnumValues = async (req, res) => {
       success: true,
       data: {
         types,
-        rooms,
         genders,
       },
     });
@@ -45,13 +39,12 @@ export const getEnumValues = async (req, res) => {
 // Tạo team mới
 export const createTeam = async (req, res) => {
   try {
-    const { sportId, type, room, gender } = req.body;
+    const { sportId, type, gender } = req.body;
 
     const newTeam = await prisma.team.create({
       data: {
         sportId: parseInt(sportId),
         type,
-        room,
         gender,
       },
       include: {
@@ -108,14 +101,13 @@ export const getTeams = async (req, res) => {
 export const updateTeam = async (req, res) => {
   try {
     const { id } = req.params;
-    const { sportId, type, room, gender } = req.body;
+    const { sportId, type, gender } = req.body;
 
     const updatedTeam = await prisma.team.update({
       where: { id: parseInt(id) },
       data: {
         sportId: parseInt(sportId),
         type,
-        room,
         gender,
       },
       include: {
