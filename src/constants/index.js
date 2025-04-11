@@ -27,7 +27,6 @@ export const formatTeamInfo = (team) => {
     rawData: {
       sportId: team.sportId,
       type: team.type,
-      room: team.room,
       gender: team.gender,
     },
   };
