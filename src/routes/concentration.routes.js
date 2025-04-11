@@ -22,8 +22,9 @@ import {
 
 const router = express.Router();
 
-router.post("/", checkPermission("CREATE_CONCENTRATION"), createConcentration);
+router.get("/rooms", getRooms);
 router.get("/", checkPermission("READ_CONCENTRATION"), getConcentrations);
+router.post("/", checkPermission("CREATE_CONCENTRATION"), createConcentration);
 router.get("/:id", checkPermission("READ_CONCENTRATION"), getConcentrationById);
 router.get(
   "/:id/participants",
@@ -74,7 +75,5 @@ router.delete(
 );
 router.get("/:id/absences", getAbsencesByConcentration);
 router.get("/:id/participant-stats", getParticipantStats);
-
-router.get("/rooms", getRooms);
 
 export default router;
