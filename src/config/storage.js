@@ -8,8 +8,28 @@ const isDevelopment = process.env.NODE_ENV === "development";
 // Khởi tạo Supabase client cho production
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  process.env.SUPABASE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+    global: {
+      headers: {
+        // Thêm role là service_role để bypass RLS
+        Authorization: `Bearer ${process.env.SUPABASE_KEY}`,
+      },
+    },
+  }
 );
+
+// Log để kiểm tra key và role
+console.log("Supabase Key:", process.env.SUPABASE_KEY);
+const {
+  data: { role },
+  error: roleError,
+} = await supabase.auth.getUser();
+console.log("Current Role:", role);
 
 // Config cho local storage
 const localStorageConfig = multer.diskStorage({
@@ -44,12 +64,18 @@ export const uploadFile = async (file, filePath) => {
       filename: file.filename,
     };
   } else {
-    // Production: upload lên Supabase storage
+    console.log("Attempting upload with path:", filePath);
     const { data, error } = await supabase.storage
       .from("papers")
-      .upload(filePath, file.buffer);
+      .upload(filePath, file.buffer, {
+        upsert: false,
+        contentType: file.mimetype,
+      });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Upload error:", error);
+      throw error;
+    }
 
     // Lấy public URL của file
     const {
