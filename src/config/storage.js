@@ -8,19 +8,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
 // Khởi tạo Supabase client cho production
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-    global: {
-      headers: {
-        // Thêm role là service_role để bypass RLS
-        Authorization: `Bearer ${process.env.SUPABASE_KEY}`,
-      },
-    },
-  }
+  process.env.SUPABASE_KEY // Chỉ cần service role key, không cần config phức tạp
 );
 
 // Log để kiểm tra key và role
