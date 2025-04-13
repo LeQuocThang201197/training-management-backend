@@ -253,7 +253,8 @@ export const getPaperFile = async (req, res) => {
       });
     }
 
-    res.download(paper.file_path, paper.file_name, { inline: true });
+    // Redirect tới public URL của file
+    res.redirect(paper.file_path);
   } catch (error) {
     res.status(500).json({
       success: false,

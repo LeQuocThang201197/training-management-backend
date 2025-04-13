@@ -5,37 +5,21 @@ import fs from "fs";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
-// Tạo options với headers
-const options = {
-  auth: {
-    persistSession: false,
-  },
-  global: {
-    headers: {
-      Authorization: `Bearer ${process.env.SUPABASE_KEY}`,
-    },
-  },
-};
-
+// Khởi tạo Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY,
-  options
+  {
+    auth: {
+      persistSession: false,
+    },
+  }
 );
-
-// Log để kiểm tra key và role
-console.log("Supabase Key:", process.env.SUPABASE_KEY);
-const {
-  data: { role },
-  error: roleError,
-} = await supabase.auth.getUser();
-console.log("Current Role:", role);
 
 // Config cho local storage
 const localStorageConfig = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = "uploads/papers";
-    // Tạo thư mục nếu chưa tồn tại
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -47,43 +31,34 @@ const localStorageConfig = multer.diskStorage({
   },
 });
 
-// Config cho production (Supabase)
-const productionStorageConfig = multer.memoryStorage();
-
-// Export multer middleware dựa theo môi trường
+// Export multer middleware
 export const upload = multer({
-  storage: isDevelopment ? localStorageConfig : productionStorageConfig,
+  storage: isDevelopment ? localStorageConfig : multer.memoryStorage(),
 });
 
-// Hàm upload file chung cho cả 2 môi trường
+// Hàm upload file
 export const uploadFile = async (file, filePath) => {
   if (isDevelopment) {
-    // Local: file đã được lưu bởi multer disk storage
     return {
       path: file.path,
       filename: file.filename,
     };
   } else {
-    console.log("Attempting upload with path:", filePath);
     const { data, error } = await supabase.storage
       .from("papers")
       .upload(filePath, file.buffer, {
-        upsert: false,
         contentType: file.mimetype,
       });
 
-    if (error) {
-      console.error("Upload error:", error);
-      throw error;
-    }
+    if (error) throw error;
 
     // Lấy public URL của file
     const {
       data: { publicUrl },
-    } = supabase.storage.from("papers").getPublicUrl(data.path);
+    } = supabase.storage.from("papers").getPublicUrl(filePath);
 
     return {
-      path: publicUrl, // Trả về public URL thay vì path
+      path: publicUrl,
       filename: file.originalname,
     };
   }
