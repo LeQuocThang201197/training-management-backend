@@ -5,10 +5,22 @@ import fs from "fs";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
-// Khởi tạo Supabase client cho production
+// Tạo options với headers
+const options = {
+  auth: {
+    persistSession: false,
+  },
+  global: {
+    headers: {
+      Authorization: `Bearer ${process.env.SUPABASE_KEY}`,
+    },
+  },
+};
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY // Chỉ cần service role key, không cần config phức tạp
+  process.env.SUPABASE_KEY,
+  options
 );
 
 // Log để kiểm tra key và role
