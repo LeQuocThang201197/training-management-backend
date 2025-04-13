@@ -253,8 +253,11 @@ export const getPaperFile = async (req, res) => {
       });
     }
 
-    // Redirect tới public URL của file
-    res.redirect(paper.file_path);
+    // Trả về URL trong response
+    res.json({
+      success: true,
+      url: paper.file_path,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
