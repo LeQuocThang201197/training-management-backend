@@ -2,6 +2,7 @@ import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
 import path from "path";
 import fs from "fs";
+import { normalizeFileName } from "../utils/fileUtils.js";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -38,28 +39,32 @@ export const upload = multer({
 
 // Hàm upload file
 export const uploadFile = async (file, filePath) => {
+  // Chuẩn hóa tên file
+  const normalizedFileName = normalizeFileName(file.originalname);
+  const timestamp = Date.now();
+  const safeFilePath = `${timestamp}-${normalizedFileName}`;
+
   if (isDevelopment) {
     return {
       path: file.path,
-      filename: file.filename,
+      filename: normalizedFileName,
     };
   } else {
     const { data, error } = await supabase.storage
       .from("papers")
-      .upload(filePath, file.buffer, {
+      .upload(safeFilePath, file.buffer, {
         contentType: file.mimetype,
       });
 
     if (error) throw error;
 
-    // Lấy public URL của file
     const {
       data: { publicUrl },
-    } = supabase.storage.from("papers").getPublicUrl(filePath);
+    } = supabase.storage.from("papers").getPublicUrl(safeFilePath);
 
     return {
       path: publicUrl,
-      filename: file.originalname,
+      filename: normalizedFileName,
     };
   }
 };
