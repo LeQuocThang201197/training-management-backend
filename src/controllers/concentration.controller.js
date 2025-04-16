@@ -996,3 +996,80 @@ export const getRooms = async (req, res) => {
     });
   }
 };
+
+// Thêm function mới
+export const getAvailablePapers = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    // Build where condition cho search
+    const whereCondition = {
+      NOT: {
+        concentrations: {
+          some: {
+            concentration_id: parseInt(id),
+          },
+        },
+      },
+      ...(search && {
+        OR: [
+          {
+            content: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+          {
+            publisher: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+          {
+            number: {
+              equals: isNaN(parseInt(search)) ? undefined : parseInt(search),
+            },
+          },
+        ].filter(Boolean),
+      }),
+    };
+
+    // Đếm tổng số papers thỏa mãn điều kiện
+    const total = await prisma.paper.count({
+      where: whereCondition,
+    });
+
+    // Lấy papers với phân trang
+    const papers = await prisma.paper.findMany({
+      where: whereCondition,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      skip: (parseInt(page) - 1) * parseInt(limit),
+      take: parseInt(limit),
+    });
+
+    res.json({
+      success: true,
+      data: papers,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};

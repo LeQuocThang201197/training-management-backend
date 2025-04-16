@@ -18,6 +18,7 @@ import {
   getAbsencesByConcentration,
   getParticipantStats,
   getRooms,
+  getAvailablePapers,
 } from "../controllers/concentration.controller.js";
 
 const router = express.Router();
@@ -75,5 +76,10 @@ router.delete(
 );
 router.get("/:id/absences", getAbsencesByConcentration);
 router.get("/:id/participant-stats", getParticipantStats);
+router.get(
+  "/:id/available-papers",
+  checkPermission("READ_PAPER"),
+  getAvailablePapers
+);
 
 export default router;
