@@ -203,70 +203,41 @@ export const getPaperById = async (req, res) => {
 export const updatePaper = async (req, res) => {
   try {
     const { id } = req.params;
+    const { number, code, publisher, type, content, related_year, date } =
+      req.body;
+    const file = req.file;
 
-    // Log để debug
-    console.log("Request body:", req.body);
-    console.log("File:", req.file);
-
-    // Validate dữ liệu đầu vào
-    if (!req.body || Object.keys(req.body).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Dữ liệu cập nhật không hợp lệ",
-      });
-    }
-
-    // Parse các trường dữ liệu một cách an toàn
-    const updateData = {
-      ...(req.body.number && { number: parseInt(req.body.number) }),
-      ...(req.body.code && { code: req.body.code }),
-      ...(req.body.publisher && { publisher: req.body.publisher }),
-      ...(req.body.type && { type: req.body.type }),
-      ...(req.body.content && { content: req.body.content }),
-      ...(req.body.related_year && {
-        related_year: parseInt(req.body.related_year),
-      }),
-      ...(req.body.date && { date: new Date(req.body.date) }),
-    };
-
-    // Kiểm tra paper tồn tại
+    // Lấy thông tin paper cũ để có file_path
     const oldPaper = await prisma.paper.findUnique({
       where: { id: parseInt(id) },
     });
 
-    if (!oldPaper) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy văn bản",
-      });
-    }
-
-    // Xử lý file nếu có
-    if (req.file) {
-      const filePath = `${Date.now()}-${req.file.originalname}`;
-      const fileData = await uploadFile(req.file, filePath);
+    // Upload file mới nếu có
+    let fileData = null;
+    if (file) {
+      const filePath = `${Date.now()}-${file.originalname}`;
+      fileData = await uploadFile(file, filePath);
 
       // Xóa file cũ nếu tồn tại
       if (oldPaper.file_path) {
         await deleteFileFromStorage(oldPaper.file_path);
       }
-
-      // Thêm thông tin file vào dữ liệu cập nhật
-      updateData.file_name = req.file.originalname;
-      updateData.file_path = fileData.path;
     }
 
-    // Cập nhật paper
     const updatedPaper = await prisma.paper.update({
       where: { id: parseInt(id) },
-      data: updateData,
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+      data: {
+        number: parseInt(number),
+        code,
+        publisher,
+        type,
+        content,
+        related_year: parseInt(related_year),
+        date: new Date(date),
+        ...(fileData && {
+          file_name: file.originalname,
+          file_path: fileData.path,
+        }),
       },
     });
 
@@ -276,7 +247,6 @@ export const updatePaper = async (req, res) => {
       data: updatedPaper,
     });
   } catch (error) {
-    console.error("Update paper error:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi server",
