@@ -1,21 +1,10 @@
 import multer from "multer";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "./supabase.js";
 import path from "path";
 import fs from "fs";
 import { normalizeFileName } from "../utils/fileUtils.js";
 
 const isDevelopment = process.env.NODE_ENV === "development";
-
-// Khởi tạo Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY,
-  {
-    auth: {
-      persistSession: false,
-    },
-  }
-);
 
 // Config cho local storage
 const localStorageConfig = multer.diskStorage({
@@ -27,8 +16,9 @@ const localStorageConfig = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    const uniqueSuffix = Date.now();
+    const normalizedName = normalizeFileName(file.originalname);
+    cb(null, `${uniqueSuffix}-${normalizedName}`);
   },
 });
 
@@ -39,20 +29,15 @@ export const upload = multer({
 
 // Hàm upload file
 export const uploadFile = async (file, filePath) => {
-  // Chuẩn hóa tên file
-  const normalizedFileName = normalizeFileName(file.originalname);
-  const timestamp = Date.now();
-  const safeFilePath = `${timestamp}-${normalizedFileName}`;
-
   if (isDevelopment) {
     return {
       path: file.path,
-      filename: normalizedFileName,
+      filename: file.filename,
     };
   } else {
     const { data, error } = await supabase.storage
       .from("papers")
-      .upload(safeFilePath, file.buffer, {
+      .upload(filePath, file.buffer, {
         contentType: file.mimetype,
       });
 
@@ -60,11 +45,11 @@ export const uploadFile = async (file, filePath) => {
 
     const {
       data: { publicUrl },
-    } = supabase.storage.from("papers").getPublicUrl(safeFilePath);
+    } = supabase.storage.from("papers").getPublicUrl(filePath);
 
     return {
       path: publicUrl,
-      filename: normalizedFileName,
+      filename: file.originalname,
     };
   }
 };

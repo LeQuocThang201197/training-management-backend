@@ -1,6 +1,22 @@
 import { prisma } from "../config/prisma.js";
 import { formatTeamInfo } from "../constants/index.js";
-import { upload, uploadFile } from "../config/storage.js";
+import { uploadFile } from "../config/storage.js";
+import { supabase } from "../config/supabase.js";
+
+// Thêm function xóa file từ storage
+const deleteFileFromStorage = async (filePath) => {
+  if (!filePath) return;
+
+  try {
+    const { error } = await supabase.storage
+      .from("papers")
+      .remove([filePath.split("/").pop()]); // Lấy tên file từ đường dẫn
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error deleting file:", error);
+  }
+};
 
 // Tạo văn bản mới
 export const createPaper = async (req, res) => {
@@ -189,6 +205,24 @@ export const updatePaper = async (req, res) => {
     const { id } = req.params;
     const { number, code, publisher, type, content, related_year, date } =
       req.body;
+    const file = req.file;
+
+    // Lấy thông tin paper cũ để có file_path
+    const oldPaper = await prisma.paper.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    // Upload file mới nếu có
+    let fileData = null;
+    if (file) {
+      const filePath = `${Date.now()}-${file.originalname}`;
+      fileData = await uploadFile(file, filePath);
+
+      // Xóa file cũ nếu tồn tại
+      if (oldPaper.file_path) {
+        await deleteFileFromStorage(oldPaper.file_path);
+      }
+    }
 
     const updatedPaper = await prisma.paper.update({
       where: { id: parseInt(id) },
@@ -200,6 +234,10 @@ export const updatePaper = async (req, res) => {
         content,
         related_year: parseInt(related_year),
         date: new Date(date),
+        ...(fileData && {
+          file_name: file.originalname,
+          file_path: fileData.path,
+        }),
       },
     });
 
@@ -221,6 +259,25 @@ export const updatePaper = async (req, res) => {
 export const deletePaper = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Lấy thông tin paper để có file_path
+    const paper = await prisma.paper.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!paper) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy văn bản",
+      });
+    }
+
+    // Xóa file từ storage nếu có
+    if (paper.file_path) {
+      await deleteFileFromStorage(paper.file_path);
+    }
+
+    // Xóa paper từ database
     await prisma.paper.delete({
       where: { id: parseInt(id) },
     });
