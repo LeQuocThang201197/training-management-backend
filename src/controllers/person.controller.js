@@ -24,15 +24,23 @@ export const createPerson = async (req, res) => {
     const newPerson = await prisma.person.create({
       data: {
         name,
-        identity_number,
+        identity_number: identity_number || null,
         identity_date: identity_date ? new Date(identity_date) : null,
-        identity_place,
-        social_insurance,
+        identity_place: identity_place || null,
+        social_insurance: social_insurance || null,
         birthday: birthday ? new Date(birthday) : null,
         gender: gender === "Nam",
-        phone,
-        email,
+        phone: phone || null,
+        email: email || null,
         created_by: req.user.id,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 

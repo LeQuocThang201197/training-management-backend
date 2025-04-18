@@ -52,6 +52,7 @@ model User {
   created_competition_participants CompetitionParticipant[] @relation("creator")
   assigned_papers                  PaperOnConcentration[]   @relation("assigner")
   assigned_participants            PersonOnConcentration[]  @relation("assigner")
+  created_persons                  Person[]                 @relation("creator")
 
   @@map("users")
   @@schema("auth")
@@ -219,19 +220,21 @@ model PaperOnConcentration {
 }
 
 model Person {
-  id               Int                     @id @default(autoincrement())
-  name             String // Tên
-  identity_number  String? // Số CCCD/CMND
-  identity_date    DateTime? // Ngày cấp CCCD/CMND
-  identity_place   String? // Nơi cấp CCCD/CMND
-  social_insurance String? // Mã số BHXH
-  birthday         DateTime? // Ngày sinh
-  gender           Boolean // Giới tính
-  phone            String? // Số điện thoại
-  email            String? // Email
-  createdAt        DateTime                @default(now())
-  updatedAt        DateTime                @updatedAt
-  participations   PersonOnConcentration[] // Quan hệ với bảng trung gian
+  id              Int      @id @default(autoincrement())
+  name            String
+  identity_number String?
+  identity_date   DateTime?
+  identity_place  String?
+  social_insurance String?
+  birthday       DateTime?
+  gender         Boolean  // true = Nam, false = Nữ
+  phone          String?
+  email          String?
+  created_by     Int      // Xóa @default(2)
+  creator        User     @relation("creator", fields: [created_by], references: [id]) 
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  participations PersonOnConcentration[]
 
   @@schema("training_management")
 }
