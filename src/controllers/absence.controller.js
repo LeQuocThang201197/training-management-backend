@@ -77,7 +77,7 @@ export const createAbsence = async (req, res) => {
         startDate: absenceStart,
         endDate: absenceEnd,
         note,
-        createdBy: req.user.id,
+        created_by: req.user.id,
       },
       include: {
         participation: {
