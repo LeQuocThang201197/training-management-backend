@@ -12,7 +12,11 @@ const router = express.Router();
 
 // Routes cho quản lý vắng mặt
 router.get("/participations/:participation_id/absences", getAbsences);
-router.post("/", checkPermission("CREATE_ABSENCE"), createAbsence);
+router.post(
+  "/participations/:participation_id/absences",
+  checkPermission("CREATE_ABSENCE"),
+  createAbsence
+);
 router.put("/:id", checkPermission("UPDATE_ABSENCE"), updateAbsence);
 router.delete("/:id", checkPermission("DELETE_ABSENCE"), deleteAbsence);
 
