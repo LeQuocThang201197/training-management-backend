@@ -6,36 +6,59 @@ export const getOverviewStats = async (req, res) => {
     const now = new Date();
 
     // Lấy tất cả đợt tập trung đang diễn ra và group theo team type
-    const concentrationStats = await prisma.concentration.groupBy({
-      by: ["team.type"],
+    const concentrationStats = await prisma.concentration.findMany({
       where: {
         startDate: { lte: now },
         endDate: { gte: now },
       },
-      _count: true,
+      include: {
+        team: true,
+      },
     });
 
+    // Group theo team type
+    const concentrationsByTeamType = concentrationStats.reduce((acc, con) => {
+      const teamType = con.team.type;
+      acc[teamType] = (acc[teamType] || 0) + 1;
+      return acc;
+    }, {});
+
     // Tính tổng số đợt tập trung
-    const totalConcentrations = concentrationStats.reduce(
-      (sum, stat) => sum + stat._count,
-      0
-    );
+    const totalConcentrations = concentrationStats.length;
 
     // Lấy số người tham gia theo role và team type
-    const participantStats = await prisma.personOnConcentration.groupBy({
-      by: ["role.type", "concentration.team.type"],
+    const participantStats = await prisma.personOnConcentration.findMany({
       where: {
         concentration: {
           startDate: { lte: now },
           endDate: { gte: now },
         },
       },
-      _count: true,
+      include: {
+        role: true,
+        concentration: {
+          include: {
+            team: true,
+          },
+        },
+      },
     });
 
-    // Tính tổng số người tham gia theo role
-    const totalByRole = participantStats.reduce((acc, stat) => {
-      acc[stat.role_type] = (acc[stat.role_type] || 0) + stat._count;
+    // Group theo role và team type
+    const participantsByRole = participantStats.reduce((acc, p) => {
+      const roleType = p.role.type;
+      acc[roleType] = (acc[roleType] || 0) + 1;
+      return acc;
+    }, {});
+
+    const participantsByTeamAndRole = participantStats.reduce((acc, p) => {
+      const teamType = p.concentration.team.type;
+      const roleType = p.role.type;
+
+      if (!acc[teamType]) {
+        acc[teamType] = {};
+      }
+      acc[teamType][roleType] = (acc[teamType][roleType] || 0) + 1;
       return acc;
     }, {});
 
@@ -44,20 +67,11 @@ export const getOverviewStats = async (req, res) => {
       data: {
         concentrations: {
           total: totalConcentrations,
-          byTeamType: concentrationStats.reduce((acc, stat) => {
-            acc[stat.team_type] = stat._count;
-            return acc;
-          }, {}),
+          byTeamType: concentrationsByTeamType,
         },
         participants: {
-          total: totalByRole,
-          byTeamType: participantStats.reduce((acc, stat) => {
-            if (!acc[stat.team_type]) {
-              acc[stat.team_type] = {};
-            }
-            acc[stat.team_type][stat.role_type] = stat._count;
-            return acc;
-          }, {}),
+          total: participantsByRole,
+          byTeamType: participantsByTeamAndRole,
         },
       },
     });
