@@ -11,6 +11,7 @@ import organizationRoutes from "./organization.routes.js";
 import absenceRoutes from "./absence.routes.js";
 import trainingRoutes from "./training.routes.js";
 import competitionRoutes from "./competition.routes.js";
+import overviewRoutes from "./overview.routes.js";
 import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
@@ -28,6 +29,7 @@ router.use("/organizations", organizationRoutes);
 router.use("/absences", absenceRoutes);
 router.use("/trainings", trainingRoutes);
 router.use("/competitions", competitionRoutes);
+router.use("/overview", overviewRoutes);
 
 // Protected routes
 router.get("/profile", isAuthenticated, (req, res) => {

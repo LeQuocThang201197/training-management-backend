@@ -78,6 +78,12 @@ export const permissions = [
   { name: "READ_ABSENCE", description: "View absence information" },
   { name: "UPDATE_ABSENCE", description: "Update absence information" },
   { name: "DELETE_ABSENCE", description: "Delete absence record" },
+
+  // New permission for overview
+  {
+    name: "READ_OVERVIEW",
+    description: "View overview statistics and dashboard",
+  },
 ];
 
 export const ALL_PERMISSIONS = permissions.map((p) => p.name);
