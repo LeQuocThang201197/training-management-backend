@@ -85,97 +85,64 @@ export const getOverviewStats = async (req, res) => {
   }
 };
 
-// Thống kê theo loại đội
-export const getTeamStats = async (req, res) => {
+export const getCompetitionStats = async (req, res) => {
   try {
     const now = new Date();
 
-    // Đếm số đợt tập trung theo loại đội
-    const teamStats = await prisma.concentration.groupBy({
-      by: ["team.type"],
+    // Lấy tất cả giải đấu đang diễn ra
+    const competitions = await prisma.competition.findMany({
       where: {
         startDate: { lte: now },
         endDate: { gte: now },
       },
-      _count: true,
-      orderBy: {
-        _count: "desc",
-      },
-    });
-
-    res.json({
-      success: true,
-      data: teamStats,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server",
-      error: error.message,
-    });
-  }
-};
-
-// Thống kê người tham gia theo vai trò
-export const getParticipantStats = async (req, res) => {
-  try {
-    const now = new Date();
-
-    // Đếm số người tham gia theo vai trò
-    const participantStats = await prisma.personOnConcentration.groupBy({
-      by: ["role.type"],
-      where: {
+      include: {
         concentration: {
-          startDate: { lte: now },
-          endDate: { gte: now },
+          include: {
+            team: true,
+          },
         },
       },
-      _count: true,
     });
 
-    res.json({
-      success: true,
-      data: participantStats,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server",
-      error: error.message,
-    });
-  }
-};
+    // Tính tổng số giải đấu
+    const total = competitions.length;
 
-// Thống kê hoạt động (tập huấn, thi đấu)
-export const getActivityStats = async (req, res) => {
-  try {
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
+    // Group theo location (trong nước/nước ngoài)
+    const byLocation = competitions.reduce((acc, comp) => {
+      const locationType = comp.isForeign ? "foreign" : "domestic";
+      acc[locationType] = (acc[locationType] || 0) + 1;
+      return acc;
+    }, {});
 
-    // Đếm số hoạt động trong 30 ngày qua
-    const [trainings, competitions] = await Promise.all([
-      prisma.training.count({
-        where: {
-          startDate: { gte: thirtyDaysAgo },
-        },
-      }),
-      prisma.competition.count({
-        where: {
-          startDate: { gte: thirtyDaysAgo },
-        },
-      }),
-    ]);
+    // Group theo team type và location
+    const byTeamType = competitions.reduce((acc, comp) => {
+      const teamType = comp.concentration.team.type;
+      const locationType = comp.isForeign ? "foreign" : "domestic";
+
+      if (!acc[teamType]) {
+        acc[teamType] = {
+          total: 0,
+          foreign: 0,
+          domestic: 0,
+        };
+      }
+
+      acc[teamType].total += 1;
+      acc[teamType][locationType] += 1;
+
+      return acc;
+    }, {});
 
     res.json({
       success: true,
       data: {
-        last30Days: {
-          trainings,
-          competitions,
-        },
+        total,
+        byLocation,
+        byTeamType,
       },
     });
   } catch (error) {
+    console.error("Competition stats error:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi server",
