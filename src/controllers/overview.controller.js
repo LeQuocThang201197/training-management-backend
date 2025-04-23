@@ -157,3 +157,87 @@ export const getCompetitionStats = async (req, res) => {
     });
   }
 };
+
+export const getTrainingStats = async (req, res) => {
+  try {
+    const now = new Date();
+    const allTeamTypes = ["ADULT", "JUNIOR", "DISABILITY"];
+
+    // Lấy tất cả đợt tập huấn đang diễn ra
+    const trainings = await prisma.training.findMany({
+      where: {
+        startDate: { lte: now },
+        endDate: { gte: now },
+      },
+      include: {
+        concentration: {
+          include: {
+            team: true,
+          },
+        },
+        participants: {
+          include: {
+            participation: {
+              include: {
+                role: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Tính tổng số đợt tập huấn
+    const total = trainings.length;
+
+    // Tạo template cho mỗi team type
+    const byTeamType = allTeamTypes.reduce((acc, type) => {
+      acc[type] = {
+        total: 0,
+        participants: {
+          total: 0,
+          ATHLETE: 0,
+          COACH: 0,
+          SPECIALIST: 0,
+          OTHER: 0,
+        },
+      };
+      return acc;
+    }, {});
+
+    // Cập nhật số liệu thực tế
+    trainings.forEach((training) => {
+      const teamType = training.concentration.team.type;
+      byTeamType[teamType].total += 1;
+
+      // Đếm số người tham gia theo role
+      training.participants.forEach((p) => {
+        const roleType = p.participation.role.type;
+        byTeamType[teamType].participants.total += 1;
+        byTeamType[teamType].participants[roleType] += 1;
+      });
+    });
+
+    // Tính tổng số người tham gia
+    const totalParticipants = Object.values(byTeamType).reduce(
+      (sum, team) => sum + team.participants.total,
+      0
+    );
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        totalParticipants,
+        byTeamType,
+      },
+    });
+  } catch (error) {
+    console.error("Training stats error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
