@@ -89,6 +89,9 @@ export const getCompetitionStats = async (req, res) => {
   try {
     const now = new Date();
 
+    // Lấy tất cả team types từ enum TeamType
+    const allTeamTypes = ["ADULT", "JUNIOR", "DISABILITY"]; // Hardcode tạm, sau này có thể lấy từ schema
+
     // Lấy tất cả giải đấu đang diễn ra
     const competitions = await prisma.competition.findMany({
       where: {
@@ -108,30 +111,34 @@ export const getCompetitionStats = async (req, res) => {
     const total = competitions.length;
 
     // Group theo location (trong nước/nước ngoài)
-    const byLocation = competitions.reduce((acc, comp) => {
-      const locationType = comp.isForeign ? "foreign" : "domestic";
-      acc[locationType] = (acc[locationType] || 0) + 1;
+    const byLocation = {
+      domestic: 0,
+      foreign: 0,
+      ...competitions.reduce((acc, comp) => {
+        const locationType = comp.isForeign ? "foreign" : "domestic";
+        acc[locationType] = (acc[locationType] || 0) + 1;
+        return acc;
+      }, {}),
+    };
+
+    // Tạo template cho mỗi team type
+    const byTeamType = allTeamTypes.reduce((acc, type) => {
+      acc[type] = {
+        total: 0,
+        foreign: 0,
+        domestic: 0,
+      };
       return acc;
     }, {});
 
-    // Group theo team type và location
-    const byTeamType = competitions.reduce((acc, comp) => {
+    // Cập nhật số liệu thực tế
+    competitions.forEach((comp) => {
       const teamType = comp.concentration.team.type;
       const locationType = comp.isForeign ? "foreign" : "domestic";
 
-      if (!acc[teamType]) {
-        acc[teamType] = {
-          total: 0,
-          foreign: 0,
-          domestic: 0,
-        };
-      }
-
-      acc[teamType].total += 1;
-      acc[teamType][locationType] += 1;
-
-      return acc;
-    }, {});
+      byTeamType[teamType].total += 1;
+      byTeamType[teamType][locationType] += 1;
+    });
 
     res.json({
       success: true,
