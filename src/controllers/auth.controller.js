@@ -73,14 +73,6 @@ export const login = (req, res, next) => {
         });
       }
 
-      // Set cookie options
-      res.cookie("connect.sid", req.sessionID, {
-        httpOnly: true,
-        secure: true,
-        sameSite: process.env.NODE_ENV === "production" ? "lax" : "none",
-        maxAge: 24 * 60 * 60 * 1000,
-      });
-
       // Get user's roles and permissions
       const userRoles = await prisma.userRole.findMany({
         where: { user_id: user.id },
