@@ -4,12 +4,14 @@ import { prisma } from "../config/prisma.js";
 export const getOverviewStats = async (req, res) => {
   try {
     const now = new Date();
+    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(now.setHours(23, 59, 59, 999));
 
     // Lấy tất cả đợt tập trung đang diễn ra và group theo team type
     const concentrationStats = await prisma.concentration.findMany({
       where: {
-        startDate: { lte: now },
-        endDate: { gte: now },
+        startDate: { lte: endOfDay },
+        endDate: { gte: startOfDay },
       },
       include: {
         team: true,
@@ -30,8 +32,8 @@ export const getOverviewStats = async (req, res) => {
     const participantStats = await prisma.personOnConcentration.findMany({
       where: {
         concentration: {
-          startDate: { lte: now },
-          endDate: { gte: now },
+          startDate: { lte: endOfDay },
+          endDate: { gte: startOfDay },
         },
       },
       include: {
@@ -88,6 +90,8 @@ export const getOverviewStats = async (req, res) => {
 export const getCompetitionStats = async (req, res) => {
   try {
     const now = new Date();
+    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(now.setHours(23, 59, 59, 999));
 
     // Lấy tất cả team types từ enum TeamType
     const allTeamTypes = ["ADULT", "JUNIOR", "DISABILITY"]; // Hardcode tạm, sau này có thể lấy từ schema
@@ -95,8 +99,8 @@ export const getCompetitionStats = async (req, res) => {
     // Lấy tất cả giải đấu đang diễn ra
     const competitions = await prisma.competition.findMany({
       where: {
-        startDate: { lte: now },
-        endDate: { gte: now },
+        startDate: { lte: endOfDay },
+        endDate: { gte: startOfDay },
       },
       include: {
         concentration: {
@@ -161,13 +165,15 @@ export const getCompetitionStats = async (req, res) => {
 export const getTrainingStats = async (req, res) => {
   try {
     const now = new Date();
+    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(now.setHours(23, 59, 59, 999));
     const allTeamTypes = ["ADULT", "JUNIOR", "DISABILITY"];
 
     // Lấy tất cả đợt tập huấn đang diễn ra
     const trainings = await prisma.training.findMany({
       where: {
-        startDate: { lte: now },
-        endDate: { gte: now },
+        startDate: { lte: endOfDay },
+        endDate: { gte: startOfDay },
       },
       include: {
         concentration: {

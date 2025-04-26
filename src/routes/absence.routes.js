@@ -6,7 +6,6 @@ import {
   deleteAbsence,
   getAbsences,
 } from "../controllers/absence.controller.js";
-import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 

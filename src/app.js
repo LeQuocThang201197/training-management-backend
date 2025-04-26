@@ -7,6 +7,7 @@ import routes from "./routes/index.js";
 import session from "express-session";
 import passport from "./config/passport.js";
 import path from "path";
+import pgSession from "connect-pg-simple";
 
 // Load env vars
 dotenv.config();
@@ -49,9 +50,22 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const pgStore = pgSession(session);
+
 // Session middleware
 app.use(
   session({
+    store: new pgStore({
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+        ssl:
+          process.env.NODE_ENV === "production"
+            ? { rejectUnauthorized: false }
+            : false,
+      },
+      tableName: "sessions", // Tên bảng lưu session
+      createTableIfMissing: true, // Tự động tạo bảng nếu chưa có
+    }),
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
@@ -60,8 +74,7 @@ app.use(
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      path: "/",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
