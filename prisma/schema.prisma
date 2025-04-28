@@ -1,58 +1,45 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-  schemas  = ["public", "training_management", "auth"]
-}
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["multiSchema"]
 }
 
-// Enum cho loại vai trò của person
-enum PersonRoleType {
-  ATHLETE // Vận động viên
-  COACH // Huấn luyện viên
-  SPECIALIST // Chuyên gia
-  OTHER // Khác
-
-  @@schema("training_management")
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["auth", "public", "training_management"]
 }
 
-// Role của nhân sự (vai trò trong đợt tập trung)
 model PersonRole {
   id          Int                     @id @default(autoincrement())
-  name        String                  @unique // Tên vai trò (Vận động viên, Huấn luyện viên, Bác sĩ...)
-  type        PersonRoleType // Loại vai trò 
+  name        String                  @unique
+  type        PersonRoleType
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
-  assignments PersonOnConcentration[] // Relation với bảng trung gian
+  assignments PersonOnConcentration[]
 
   @@schema("training_management")
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  password  String
-  name      String
-  roles     UserRole[] 
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  profile   Profile?
-
-  // Relations...
-  created_papers                   Paper[]                  @relation("creator")
-  created_concentrations           Concentration[]          @relation("creator")
-  created_trainings                Training[]               @relation("creator")
-  created_competitions             Competition[]            @relation("creator")
+  id                               Int                      @id @default(autoincrement())
+  email                            String                   @unique
+  password                         String
+  name                             String
+  createdAt                        DateTime                 @default(now())
+  updatedAt                        DateTime                 @updatedAt
+  profile                          Profile?
+  roles                            UserRole[]
   created_absences                 AbsenceRecord[]          @relation("creator")
-  created_training_participants    TrainingParticipant[]    @relation("creator")
+  created_competitions             Competition[]            @relation("creator")
   created_competition_participants CompetitionParticipant[] @relation("creator")
+  created_concentrations           Concentration[]          @relation("creator")
+  created_papers                   Paper[]                  @relation("creator")
   assigned_papers                  PaperOnConcentration[]   @relation("assigner")
-  assigned_participants            PersonOnConcentration[]  @relation("assigner")
   created_persons                  Person[]                 @relation("creator")
+  assigned_participants            PersonOnConcentration[]  @relation("assigner")
+  created_trainings                Training[]               @relation("creator")
+  created_training_participants    TrainingParticipant[]    @relation("creator")
 
   @@map("users")
   @@schema("auth")
@@ -88,59 +75,34 @@ model Sport {
 model Team {
   id             Int             @id @default(autoincrement())
   sportId        Int
-  sport          Sport           @relation(fields: [sportId], references: [id])
   type           TeamType
   gender         TeamGender      @default(MIXED)
-  concentrations Concentration[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  concentrations Concentration[]
+  sport          Sport           @relation(fields: [sportId], references: [id])
 
   @@unique([sportId, type, gender])
   @@index([sportId])
   @@schema("training_management")
 }
 
-enum TeamGender {
-  MALE // Nam
-  FEMALE // Nữ
-  MIXED // Cả nam và nữ
-
-  @@schema("training_management")
-}
-
-enum TeamType {
-  JUNIOR // Trẻ
-  ADULT // Tuyển
-  DISABILITY // Khuyết tật
-
-  @@schema("training_management")
-}
-
-enum ManagementRoom {
-  ROOM
-  ROOM_1 // Vụ 1
-  ROOM_2 // Vụ 2
-  ROOM_3 // Thể thao cho mọi người
-
-  @@schema("training_management")
-}
-
 model Paper {
   id             Int                    @id @default(autoincrement())
-  number         Int? // Thêm ? để cho phép null
-  code           String? // Thêm ? để cho phép null
+  number         Int?
+  code           String?
   publisher      String
   type           String
   content        String
   related_year   Int
   date           DateTime
-  file_name      String? // Tên file gốc
-  file_path      String? // Đường dẫn lưu file
-  created_by     Int
-  creator        User    @relation("creator", fields: [created_by], references: [id])
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
-  concentrations PaperOnConcentration[] // Relation với bảng trung gian
+  file_name      String?
+  file_path      String?
+  created_by     Int
+  creator        User                   @relation("creator", fields: [created_by], references: [id])
+  concentrations PaperOnConcentration[]
 
   @@schema("training_management")
 }
@@ -148,22 +110,22 @@ model Paper {
 model Concentration {
   id              Int                     @id @default(autoincrement())
   teamId          Int
-  team            Team                    @relation(fields: [teamId], references: [id])
   location        String
-  room            ManagementRoom
-  related_year    Int
-  sequence_number Int
   startDate       DateTime
   endDate         DateTime
   note            String
-  created_by      Int
-  creator         User                    @relation("creator", fields: [created_by], references: [id])
-  trainings       Training[]
-  papers          PaperOnConcentration[]
-  participants    PersonOnConcentration[]
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
+  related_year    Int
+  sequence_number Int
+  created_by      Int
+  room            ManagementRoom
   competitions    Competition[]
+  creator         User                    @relation("creator", fields: [created_by], references: [id])
+  team            Team                    @relation(fields: [teamId], references: [id])
+  papers          PaperOnConcentration[]
+  participants    PersonOnConcentration[]
+  trainings       Training[]
 
   @@index([teamId])
   @@schema("training_management")
@@ -171,195 +133,165 @@ model Concentration {
 
 model Training {
   id               Int                   @id @default(autoincrement())
-  location         String // Địa điểm tập huấn
-  isForeign        Boolean // true = Nước ngoài, false = Trong nước
-  startDate        DateTime // Ngày bắt đầu tập huấn
-  endDate          DateTime // Ngày kết thúc tập huấn
-  note             String // Ghi chú
+  location         String
+  startDate        DateTime
+  endDate          DateTime
+  note             String
   concentration_id Int
-  concentration    Concentration         @relation(fields: [concentration_id], references: [id])
-  created_by       Int
-  creator          User    @relation("creator", fields: [created_by], references: [id])
-  participants     TrainingParticipant[]
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
+  isForeign        Boolean
+  created_by       Int
+  concentration    Concentration         @relation(fields: [concentration_id], references: [id])
+  creator          User                  @relation("creator", fields: [created_by], references: [id])
+  participants     TrainingParticipant[]
 
   @@schema("training_management")
 }
 
-// Bảng quản lý người tham gia tập huấn
 model TrainingParticipant {
   participation_id Int
   training_id      Int
   note             String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
   created_by       Int
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Relations
-  participation PersonOnConcentration @relation(fields: [participation_id], references: [id])
-  training      Training              @relation(fields: [training_id], references: [id])
-  creator       User                  @relation("creator", fields: [created_by], references: [id])
+  creator          User                  @relation("creator", fields: [created_by], references: [id])
+  participation    PersonOnConcentration @relation(fields: [participation_id], references: [id])
+  training         Training              @relation(fields: [training_id], references: [id])
 
   @@id([participation_id, training_id])
   @@schema("training_management")
 }
 
-// Bảng trung gian
 model PaperOnConcentration {
   paper_id         Int
   concentration_id Int
   assignedAt       DateTime      @default(now())
   assigned_by      Int
   assigner         User          @relation("assigner", fields: [assigned_by], references: [id])
-  paper            Paper         @relation(fields: [paper_id], references: [id])
   concentration    Concentration @relation(fields: [concentration_id], references: [id])
+  paper            Paper         @relation(fields: [paper_id], references: [id])
 
   @@id([paper_id, concentration_id])
   @@schema("training_management")
 }
 
 model Person {
-  id              Int      @id @default(autoincrement())
-  name            String
-  identity_number String?
-  identity_date   DateTime?
-  identity_place  String?
+  id               Int                     @id @default(autoincrement())
+  name             String
+  identity_number  String?
+  identity_date    DateTime?
+  identity_place   String?
   social_insurance String?
-  birthday       DateTime?
-  gender         Boolean  // true = Nam, false = Nữ
-  phone          String?
-  email          String?
-  created_by     Int      // Xóa @default(2)
-  creator        User     @relation("creator", fields: [created_by], references: [id]) 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  participations PersonOnConcentration[]
+  birthday         DateTime?
+  phone            String?
+  email            String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  gender           Boolean
+  created_by       Int
+  creator          User                    @relation("creator", fields: [created_by], references: [id])
+  participations   PersonOnConcentration[]
 
   @@schema("training_management")
 }
 
-// Loại đơn vị trực thuộc
-enum OrganizationType {
-  PROVINCE // Tỉnh/Thành phố
-  OTHER // Khác
-
-  @@schema("training_management")
-}
-
-// Bảng đơn vị trực thuộc
 model Organization {
   id          Int                     @id @default(autoincrement())
-  name        String // Tên đơn vị (Hà Nội, TTHL TDTT Quốc gia...)
-  type        OrganizationType // Loại đơn vị
+  name        String
+  type        OrganizationType
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
-  assignments PersonOnConcentration[] // Relation với bảng trung gian
+  assignments PersonOnConcentration[]
 
   @@unique([name, type])
   @@schema("training_management")
 }
 
-// Bảng trung gian quản lý người tham gia đợt tập trung
 model PersonOnConcentration {
   id                        Int                      @id @default(autoincrement())
-  person_id                 Int // ID của người tham gia
-  concentration_id          Int // ID của đợt tập trung
-  role_id                   Int // ID của vai trò
-  organization_id           Int // ID của đơn vị trực thuộc
-  note                      String? // Ghi chú (lý do thêm/bớt)
-  assigned_by               Int
-  assigner                  User                     @relation("assigner", fields: [assigned_by], references: [id])
+  person_id                 Int
+  concentration_id          Int
+  role_id                   Int
+  note                      String?
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
+  organization_id           Int
+  assigned_by               Int
   absences                  AbsenceRecord[]
-  trainingParticipations    TrainingParticipant[]
   competitionParticipations CompetitionParticipant[]
-
-  // Relations
-  person        Person        @relation(fields: [person_id], references: [id])
-  concentration Concentration @relation(fields: [concentration_id], references: [id])
-  role          PersonRole    @relation(fields: [role_id], references: [id])
-  organization  Organization  @relation(fields: [organization_id], references: [id])
+  assigner                  User                     @relation("assigner", fields: [assigned_by], references: [id])
+  concentration             Concentration            @relation(fields: [concentration_id], references: [id])
+  organization              Organization             @relation(fields: [organization_id], references: [id])
+  person                    Person                   @relation(fields: [person_id], references: [id])
+  role                      PersonRole               @relation(fields: [role_id], references: [id])
+  trainingParticipations    TrainingParticipant[]
 
   @@index([concentration_id])
   @@index([organization_id])
   @@schema("training_management")
 }
 
-// Bảng quản lý vắng mặt (chỉ cho không tham gia và nghỉ phép)
 model AbsenceRecord {
-  id               Int         @id @default(autoincrement())
+  id               Int                   @id @default(autoincrement())
   participation_id Int
   type             AbsenceType
   startDate        DateTime
   endDate          DateTime
   note             String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
   created_by       Int
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-
-  // Relations
-  participation PersonOnConcentration @relation(fields: [participation_id], references: [id])
-  creator       User                  @relation("creator", fields: [created_by], references: [id])
+  creator          User                  @relation("creator", fields: [created_by], references: [id])
+  participation    PersonOnConcentration @relation(fields: [participation_id], references: [id])
 
   @@index([startDate, endDate])
   @@schema("training_management")
 }
 
-enum AbsenceType {
-  INACTIVE // Không hoạt động (chưa tham gia/tạm dừng/bị loại)
-  LEAVE // Nghỉ phép
-
-  @@schema("training_management")
-}
-
-// Bảng quản lý giải đấu
 model Competition {
   id               Int                      @id @default(autoincrement())
-  name             String // Tên giải đấu
-  location         String // Địa điểm thi đấu
-  isForeign        Boolean // true = Nước ngoài, false = Trong nước
-  startDate        DateTime // Ngày bắt đầu
-  endDate          DateTime // Ngày kết thúc
-  note             String? // Ghi chú
-  is_confirmed     Boolean                  @default(false) // Trạng thái xác nhận
-  concentration_id Int // ID của đợt tập trung
-  created_by       Int
-  creator          User                     @relation("creator", fields: [created_by], references: [id])
-  concentration    Concentration            @relation(fields: [concentration_id], references: [id])
-  participants     CompetitionParticipant[]
+  name             String
+  location         String
+  startDate        DateTime
+  endDate          DateTime
+  note             String?
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
+  isForeign        Boolean
+  is_confirmed     Boolean                  @default(false)
+  concentration_id Int
+  created_by       Int
+  concentration    Concentration            @relation(fields: [concentration_id], references: [id])
+  creator          User                     @relation("creator", fields: [created_by], references: [id])
+  participants     CompetitionParticipant[]
 
   @@index([concentration_id])
   @@schema("training_management")
 }
 
-// Bảng quản lý người tham gia thi đấu
 model CompetitionParticipant {
   participation_id Int
   competition_id   Int
   note             String?
-  startDate        DateTime // Ngày bắt đầu tham gia
-  endDate          DateTime // Ngày kết thúc tham gia
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  endDate          DateTime
+  startDate        DateTime
   created_by       Int
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Relations
-  participation PersonOnConcentration @relation(fields: [participation_id], references: [id])
-  competition   Competition           @relation(fields: [competition_id], references: [id])
-  creator       User                  @relation("creator", fields: [created_by], references: [id])
+  competition      Competition           @relation(fields: [competition_id], references: [id])
+  creator          User                  @relation("creator", fields: [created_by], references: [id])
+  participation    PersonOnConcentration @relation(fields: [participation_id], references: [id])
 
   @@id([participation_id, competition_id])
   @@schema("training_management")
 }
-// Thêm các model mới trong schema auth
+
 model Permission {
   id          Int              @id @default(autoincrement())
-  name        String           @unique // CREATE_USER, READ_USER...
-  description String // Mô tả chi tiết
+  name        String           @unique
+  description String
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   roles       RolePermission[]
@@ -369,11 +301,11 @@ model Permission {
 
 model Role {
   id          Int              @id @default(autoincrement())
-  name        String           @unique // ADMIN, MANAGER...
-  description String // Mô tả về role
-  is_admin    Boolean          @default(false)
+  name        String           @unique
+  description String
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  is_admin    Boolean          @default(false)
   permissions RolePermission[]
   users       UserRole[]
 
@@ -383,23 +315,78 @@ model Role {
 model RolePermission {
   role_id       Int
   permission_id Int
-  createdAt     DateTime @default(now())
-
-  role       Role       @relation(fields: [role_id], references: [id])
-  permission Permission @relation(fields: [permission_id], references: [id])
+  createdAt     DateTime   @default(now())
+  permission    Permission @relation(fields: [permission_id], references: [id])
+  role          Role       @relation(fields: [role_id], references: [id])
 
   @@id([role_id, permission_id])
   @@schema("auth")
 }
 
 model UserRole {
-  user_id   Int
   role_id   Int
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [user_id], references: [id])
-  role Role @relation(fields: [role_id], references: [id])
+  user_id   Int
+  role      Role     @relation(fields: [role_id], references: [id])
+  user      User     @relation(fields: [user_id], references: [id])
 
   @@id([user_id, role_id])
   @@schema("auth")
+}
+
+model sessions {
+  sid    String   @id(map: "session_pkey") @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+  @@schema("public")
+}
+
+enum PersonRoleType {
+  ATHLETE
+  COACH
+  OTHER
+  SPECIALIST
+
+  @@schema("training_management")
+}
+
+enum TeamGender {
+  MALE
+  FEMALE
+  MIXED
+
+  @@schema("training_management")
+}
+
+enum TeamType {
+  JUNIOR
+  ADULT
+  DISABILITY
+
+  @@schema("training_management")
+}
+
+enum ManagementRoom {
+  ROOM_1
+  ROOM_2
+  ROOM_3
+  ROOM
+
+  @@schema("training_management")
+}
+
+enum OrganizationType {
+  PROVINCE
+  OTHER
+
+  @@schema("training_management")
+}
+
+enum AbsenceType {
+  INACTIVE
+  LEAVE
+
+  @@schema("training_management")
 }

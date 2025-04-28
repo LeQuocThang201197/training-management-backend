@@ -8,6 +8,7 @@ import session from "express-session";
 import passport from "./config/passport.js";
 import path from "path";
 import pgSession from "connect-pg-simple";
+import { pool } from "./config/db.js"; // Giả sử bạn đã có pool connection
 
 // Load env vars
 dotenv.config();
@@ -50,31 +51,23 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const pgStore = pgSession(session);
+const PostgresStore = pgSession(session);
 
 // Session middleware
 app.use(
   session({
-    store: new pgStore({
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-        ssl:
-          process.env.NODE_ENV === "production"
-            ? { rejectUnauthorized: false }
-            : false,
-      },
-      tableName: "sessions", // Tên bảng lưu session
-      createTableIfMissing: true, // Tự động tạo bảng nếu chưa có
+    store: new PostgresStore({
+      pool: pool,
+      tableName: "sessions",
+      schemaName: "public",
     }),
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || "your_secret_key",
     resave: false,
     saveUninitialized: false,
-    proxy: true,
     cookie: {
+      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 1000 * 60 * 60 * 24, // 24 giờ
     },
   })
 );

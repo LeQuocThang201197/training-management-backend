@@ -1,5 +1,6 @@
 const { Sequelize } = require("sequelize");
 const dotenv = require("dotenv");
+import pg from "pg";
 
 dotenv.config();
 
@@ -28,5 +29,13 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
+
+export const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false,
+});
 
 module.exports = { sequelize, connectDB };
