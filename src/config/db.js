@@ -1,5 +1,5 @@
-const { Sequelize } = require("sequelize");
-const dotenv = require("dotenv");
+import { Sequelize } from "sequelize";
+import dotenv from "dotenv";
 import pg from "pg";
 
 dotenv.config();
@@ -20,7 +20,7 @@ const sequelize = new Sequelize({
   },
 });
 
-const connectDB = async () => {
+export const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log("PostgreSQL connection has been established successfully.");
@@ -38,4 +38,4 @@ export const pool = new pg.Pool({
       : false,
 });
 
-module.exports = { sequelize, connectDB };
+export { sequelize };
