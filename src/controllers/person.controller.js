@@ -203,15 +203,82 @@ export const updatePerson = async (req, res) => {
 export const deletePerson = async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.person.delete({
+
+    // Kiểm tra person có tồn tại không
+    const person = await prisma.person.findUnique({
       where: { id: parseInt(id) },
+      include: {
+        participations: {
+          include: {
+            trainingParticipations: true,
+            competitionParticipations: true,
+            absences: true,
+          },
+        },
+      },
+    });
+
+    if (!person) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy thông tin cá nhân",
+      });
+    }
+
+    // Xóa tất cả dữ liệu liên quan trong một transaction
+    await prisma.$transaction(async (tx) => {
+      // 1. Xóa tất cả absences
+      for (const participation of person.participations) {
+        if (participation.absences.length > 0) {
+          await tx.absenceRecord.deleteMany({
+            where: {
+              participation_id: participation.id,
+            },
+          });
+        }
+      }
+
+      // 2. Xóa tất cả training participations
+      for (const participation of person.participations) {
+        if (participation.trainingParticipations.length > 0) {
+          await tx.trainingParticipant.deleteMany({
+            where: {
+              participation_id: participation.id,
+            },
+          });
+        }
+      }
+
+      // 3. Xóa tất cả competition participations
+      for (const participation of person.participations) {
+        if (participation.competitionParticipations.length > 0) {
+          await tx.competitionParticipant.deleteMany({
+            where: {
+              participation_id: participation.id,
+            },
+          });
+        }
+      }
+
+      // 4. Xóa tất cả person participations
+      await tx.personOnConcentration.deleteMany({
+        where: {
+          person_id: parseInt(id),
+        },
+      });
+
+      // 5. Cuối cùng xóa person
+      await tx.person.delete({
+        where: { id: parseInt(id) },
+      });
     });
 
     res.json({
       success: true,
-      message: "Xóa thông tin cá nhân thành công",
+      message: "Xóa thông tin cá nhân và dữ liệu liên quan thành công",
     });
   } catch (error) {
+    console.error("Delete person error:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi server",
