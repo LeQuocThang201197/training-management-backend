@@ -1,6 +1,5 @@
 import multer from "multer";
 import { supabase } from "./supabase.js";
-import path from "path";
 import fs from "fs";
 import { normalizeFileName } from "../utils/fileUtils.js";
 
@@ -28,13 +27,17 @@ export const upload = multer({
 });
 
 // Hàm upload file
-export const uploadFile = async (file, filePath) => {
+export const uploadFile = async (file) => {
   if (isDevelopment) {
     return {
       path: file.path,
       filename: file.filename,
     };
   } else {
+    // Tạo normalized filename cho production
+    const normalizedName = normalizeFileName(file.originalname);
+    const filePath = `${Date.now()}-${normalizedName}`;
+
     const { data, error } = await supabase.storage
       .from("papers")
       .upload(filePath, file.buffer, {
