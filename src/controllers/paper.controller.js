@@ -2,6 +2,7 @@ import { prisma } from "../config/prisma.js";
 import { formatTeamInfo } from "../constants/index.js";
 import { uploadFile } from "../config/storage.js";
 import { supabase } from "../config/supabase.js";
+import { removeVietnameseTones } from "../utils/string.js";
 
 // Thêm function xóa file từ storage
 const deleteFileFromStorage = async (filePath) => {
@@ -25,8 +26,17 @@ export const createPaper = async (req, res) => {
       req.body;
     const file = req.file;
 
-    // Tạo filePath từ thông tin file
-    const filePath = file ? `${Date.now()}-${file.originalname}` : null;
+    // Xử lý tên file tiếng Việt
+    let filePath = null;
+    if (file) {
+      // Chuẩn hóa tên file: bỏ dấu, thay khoảng trắng bằng gạch ngang
+      const sanitizedFileName = removeVietnameseTones(file.originalname)
+        .toLowerCase()
+        .replace(/[^a-z0-9.]/g, "-")
+        .replace(/-+/g, "-"); // Thay nhiều gạch ngang liên tiếp thành một
+
+      filePath = `${Date.now()}-${sanitizedFileName}`;
+    }
 
     // Upload file using common function
     let fileData = null;
