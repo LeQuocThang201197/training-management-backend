@@ -4,12 +4,13 @@ import {
   createPaper,
   getPapers,
   getPaperById,
-  updatePaper,
+  updatePaperInfo,
   deletePaper,
   getPaperFile,
   getConcentrationsByPaper,
   detachConcentrationFromPaper,
   attachConcentrationToPaper,
+  updatePaperFile,
 } from "../controllers/paper.controller.js";
 import { upload } from "../config/multer.js";
 
@@ -24,7 +25,13 @@ router.post(
 
 router.get("/", checkPermission("READ_PAPER"), getPapers);
 router.get("/:id", checkPermission("READ_PAPER"), getPaperById);
-router.put("/:id", checkPermission("UPDATE_PAPER"), updatePaper);
+router.put("/:id", checkPermission("UPDATE_PAPER"), updatePaperInfo);
+router.put(
+  "/:id/file",
+  checkPermission("UPDATE_PAPER"),
+  upload.single("file"),
+  updatePaperFile
+);
 router.delete("/:id", checkPermission("DELETE_PAPER"), deletePaper);
 router.get("/:id/file", getPaperFile);
 router.get("/:id/concentrations", getConcentrationsByPaper);

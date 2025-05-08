@@ -196,30 +196,12 @@ export const getPaperById = async (req, res) => {
   }
 };
 
-// Cập nhật văn bản
-export const updatePaper = async (req, res) => {
+// Cập nhật thông tin văn bản
+export const updatePaperInfo = async (req, res) => {
   try {
     const { id } = req.params;
     const { number, code, publisher, type, content, related_year, date } =
       req.body;
-    const file = req.file;
-
-    // Lấy thông tin paper cũ để có file_path
-    const oldPaper = await prisma.paper.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    // Upload file mới nếu có
-    let fileData = null;
-    if (file) {
-      const filePath = `${Date.now()}-${file.originalname}`;
-      fileData = await uploadFile(file, filePath);
-
-      // Xóa file cũ nếu tồn tại
-      if (oldPaper.file_path) {
-        await deleteFileFromStorage(oldPaper.file_path);
-      }
-    }
 
     const updatedPaper = await prisma.paper.update({
       where: { id: parseInt(id) },
@@ -231,16 +213,61 @@ export const updatePaper = async (req, res) => {
         content,
         related_year: parseInt(related_year),
         date: new Date(date),
-        ...(fileData && {
-          file_name: file.originalname,
-          file_path: fileData.path,
-        }),
       },
     });
 
     res.json({
       success: true,
-      message: "Cập nhật văn bản thành công",
+      message: "Cập nhật thông tin văn bản thành công",
+      data: updatedPaper,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Cập nhật file đính kèm
+export const updatePaperFile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: "Không tìm thấy file đính kèm",
+      });
+    }
+
+    // Lấy thông tin paper cũ
+    const oldPaper = await prisma.paper.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    // Upload file mới
+    const fileData = await uploadFile(file);
+
+    // Xóa file cũ nếu có
+    if (oldPaper.file_path) {
+      await deleteFileFromStorage(oldPaper.file_path);
+    }
+
+    // Cập nhật thông tin file
+    const updatedPaper = await prisma.paper.update({
+      where: { id: parseInt(id) },
+      data: {
+        file_name: file.originalname,
+        file_path: fileData.path,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Cập nhật file đính kèm thành công",
       data: updatedPaper,
     });
   } catch (error) {
