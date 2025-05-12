@@ -16,7 +16,15 @@ router.post(
   checkPermission("CREATE_ABSENCE"),
   createAbsence
 );
-router.put("/:id", checkPermission("UPDATE_ABSENCE"), updateAbsence);
-router.delete("/:id", checkPermission("DELETE_ABSENCE"), deleteAbsence);
+router.put(
+  "/participations/:participation_id/absences/:id",
+  checkPermission("UPDATE_ABSENCE"),
+  updateAbsence
+);
+router.delete(
+  "/participations/:participation_id/absences/:id",
+  checkPermission("DELETE_ABSENCE"),
+  deleteAbsence
+);
 
 export default router;
