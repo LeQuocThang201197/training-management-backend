@@ -112,7 +112,7 @@ export const createAbsence = async (req, res) => {
 // Cập nhật ghi nhận vắng mặt
 export const updateAbsence = async (req, res) => {
   try {
-    const { participation_id, absence_id } = req.params;
+    const { participation_id, id } = req.params;
     const { type, startDate, endDate, note } = req.body;
 
     const absenceStart = new Date(startDate);
@@ -130,7 +130,7 @@ export const updateAbsence = async (req, res) => {
     const existingAbsence = await prisma.absenceRecord.findFirst({
       where: {
         participation_id: parseInt(participation_id),
-        id: { not: parseInt(absence_id) },
+        id: { not: parseInt(id) },
         OR: [
           {
             AND: [
@@ -157,7 +157,7 @@ export const updateAbsence = async (req, res) => {
 
     const absence = await prisma.absenceRecord.update({
       where: {
-        id: parseInt(absence_id),
+        id: parseInt(id),
         participation_id: parseInt(participation_id),
       },
       data: {
