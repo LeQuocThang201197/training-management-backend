@@ -199,11 +199,11 @@ export const updateAbsence = async (req, res) => {
 // Xóa ghi nhận vắng mặt
 export const deleteAbsence = async (req, res) => {
   try {
-    const { participation_id, absence_id } = req.params;
+    const { participation_id, id } = req.params;
 
     await prisma.absenceRecord.delete({
       where: {
-        id: parseInt(absence_id),
+        id: parseInt(id),
         participation_id: parseInt(participation_id),
       },
     });
@@ -222,7 +222,7 @@ export const deleteAbsence = async (req, res) => {
 };
 
 // Lấy danh sách vắng mặt của một người trong đợt tập trung
-export const getAbsences = async (req, res) => {
+export const getAbsencesByParticipationId = async (req, res) => {
   try {
     const { participation_id } = req.params;
 
