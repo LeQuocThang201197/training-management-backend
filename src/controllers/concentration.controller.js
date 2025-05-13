@@ -1,6 +1,5 @@
 import { prisma } from "../config/prisma.js";
 import { formatTeamInfo, MANAGEMENT_ROOMS } from "../constants/index.js";
-import { Prisma } from "@prisma/client";
 
 // Tạo đợt tập trung mới
 export const createConcentration = async (req, res) => {

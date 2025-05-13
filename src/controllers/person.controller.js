@@ -116,17 +116,34 @@ export const getPersons = async (req, res) => {
     });
 
     // Format response với đầy đủ thông tin
-    const formattedPersons = persons.map((person) => ({
-      ...person,
-      gender: formatGender(person.gender),
-      latest_participation: person.participations[0]
-        ? {
-            role: person.participations[0].role.name,
-            sport: person.participations[0].concentration.team.sport.name,
-            team_type: person.participations[0].concentration.team.type,
-          }
-        : null,
-    }));
+    const formattedPersons = persons.map((person) => {
+      const latestParticipation = person.participations[0];
+
+      return {
+        ...person,
+        gender: formatGender(person.gender),
+        latest_participation: latestParticipation
+          ? {
+              role: latestParticipation.role.name,
+              sport: latestParticipation.concentration.team.sport.name,
+              team: {
+                type: formatTeamType(
+                  latestParticipation.concentration.team.type
+                ),
+                gender: formatTeamGender(
+                  latestParticipation.concentration.team.gender
+                ),
+              },
+              concentration: {
+                location: latestParticipation.concentration.location,
+                startDate: latestParticipation.concentration.startDate,
+                endDate: latestParticipation.concentration.endDate,
+              },
+            }
+          : null,
+        participations: undefined, // Không trả về danh sách participations
+      };
+    });
 
     res.json({
       success: true,
@@ -526,4 +543,23 @@ export const getPersonsByName = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+// Helper functions
+const formatTeamType = (type) => {
+  const types = {
+    JUNIOR: "Trẻ",
+    ADULT: "Tuyển",
+    DISABILITY: "Khuyết tật",
+  };
+  return types[type] || type;
+};
+
+const formatTeamGender = (gender) => {
+  const genders = {
+    MALE: "Nam",
+    FEMALE: "Nữ",
+    MIXED: "",
+  };
+  return genders[gender] || gender;
 };
