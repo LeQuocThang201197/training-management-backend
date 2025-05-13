@@ -550,7 +550,7 @@ const formatTeamType = (type) => {
   const types = {
     JUNIOR: "Trẻ",
     ADULT: "Tuyển",
-    DISABILITY: "Khuyết tật",
+    DISABILITY: "Người khuyết tật",
   };
   return types[type] || type;
 };
