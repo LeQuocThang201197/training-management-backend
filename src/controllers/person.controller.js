@@ -88,17 +88,44 @@ export const getPersons = async (req, res) => {
     // Lấy danh sách theo phân trang và sắp xếp
     const persons = await prisma.person.findMany({
       where,
+      include: {
+        participations: {
+          orderBy: {
+            concentration: {
+              endDate: "desc", // Sắp xếp participation theo ngày kết thúc giảm dần
+            },
+          },
+          take: 1, // Chỉ lấy participation mới nhất
+          include: {
+            concentration: {
+              include: {
+                team: {
+                  include: { sport: true },
+                },
+              },
+            },
+            role: true,
+          },
+        },
+      },
       orderBy: {
-        [sortBy]: order.toLowerCase(),
+        [sortBy]: order.toLowerCase(), // Giữ nguyên cách sắp xếp persons
       },
       skip: (parseInt(page) - 1) * parseInt(limit),
       take: parseInt(limit),
     });
 
-    // Format gender trước khi trả về
+    // Format response với đầy đủ thông tin
     const formattedPersons = persons.map((person) => ({
       ...person,
       gender: formatGender(person.gender),
+      latest_participation: person.participations[0]
+        ? {
+            role: person.participations[0].role.name,
+            sport: person.participations[0].concentration.team.sport.name,
+            team_type: person.participations[0].concentration.team.type,
+          }
+        : null,
     }));
 
     res.json({
