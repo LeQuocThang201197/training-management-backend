@@ -559,7 +559,7 @@ const formatTeamGender = (gender) => {
   const genders = {
     MALE: "Nam",
     FEMALE: "Nữ",
-    MIXED: "",
+    MIXED: "Hỗn hợp",
   };
   return genders[gender] || gender;
 };
