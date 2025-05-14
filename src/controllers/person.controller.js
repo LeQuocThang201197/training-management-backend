@@ -135,6 +135,7 @@ export const getPersons = async (req, res) => {
                 ),
               },
               concentration: {
+                id: latestParticipation.concentration.id,
                 location: latestParticipation.concentration.location,
                 startDate: latestParticipation.concentration.startDate,
                 endDate: latestParticipation.concentration.endDate,
