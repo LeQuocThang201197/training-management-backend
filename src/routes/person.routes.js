@@ -9,14 +9,12 @@ import {
   getPersonParticipations,
   attachPersonToConcentration,
   updatePersonParticipation,
-  getPersonsByName,
 } from "../controllers/person.controller.js";
 
 const router = express.Router();
 
 router.post("/", checkPermission("CREATE_PERSON"), createPerson);
 router.get("/", checkPermission("READ_PERSON"), getPersons);
-router.get("/search", checkPermission("READ_PERSON"), getPersonsByName);
 router.get("/:id", checkPermission("READ_PERSON"), getPersonById);
 router.put("/:id", checkPermission("UPDATE_PERSON"), updatePerson);
 router.delete("/:id", checkPermission("DELETE_PERSON"), deletePerson);

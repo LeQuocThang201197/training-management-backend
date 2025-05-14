@@ -67,16 +67,16 @@ export const getPersons = async (req, res) => {
     const {
       page = 1,
       limit = 10,
-      search = "",
+      q = "", // Query parameter cho tìm kiếm
       sortBy = "name",
       order = "asc",
     } = req.query;
 
     // Xây dựng điều kiện where
     const where = {
-      ...(search && {
+      ...(q && {
         name: {
-          contains: search,
+          contains: q,
           mode: "insensitive",
         },
       }),
@@ -491,50 +491,6 @@ export const updatePersonParticipation = async (req, res) => {
       success: true,
       message: "Cập nhật thông tin tham gia thành công",
       data: formattedParticipation,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server",
-      error: error.message,
-    });
-  }
-};
-
-// Tìm kiếm person theo tên
-export const getPersonsByName = async (req, res) => {
-  try {
-    const { q } = req.query; // q là search query từ client
-
-    if (!q) {
-      return res.json({
-        success: true,
-        data: [],
-      });
-    }
-
-    const persons = await prisma.person.findMany({
-      where: {
-        name: {
-          contains: q,
-          mode: "insensitive", // Tìm kiếm không phân biệt hoa thường
-        },
-      },
-      orderBy: {
-        name: "asc",
-      },
-      take: 10, // Giới hạn số lượng kết quả
-    });
-
-    // Format gender trước khi trả về
-    const formattedPersons = persons.map((person) => ({
-      ...person,
-      gender: formatGender(person.gender),
-    }));
-
-    res.json({
-      success: true,
-      data: formattedPersons,
     });
   } catch (error) {
     res.status(500).json({
