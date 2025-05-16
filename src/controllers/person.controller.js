@@ -66,7 +66,7 @@ export const createPerson = async (req, res) => {
 
     const newPerson = await prisma.person.create({
       data: {
-        name,
+        name: normalizeEmptyToNull(name),
         identity_number: normalizedIdentityNumber,
         identity_date: identity_date ? new Date(identity_date) : null,
         identity_place: normalizeEmptyToNull(identity_place),
@@ -305,7 +305,7 @@ export const updatePerson = async (req, res) => {
     const updatedPerson = await prisma.person.update({
       where: { id: parseInt(id) },
       data: {
-        name,
+        name: normalizeEmptyToNull(name),
         identity_number: normalizedIdentityNumber,
         identity_date: identity_date ? new Date(identity_date) : null,
         identity_place: normalizeEmptyToNull(identity_place),
