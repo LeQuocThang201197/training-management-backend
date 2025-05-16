@@ -180,10 +180,10 @@ model PaperOnConcentration {
 model Person {
   id               Int                     @id @default(autoincrement())
   name             String
-  identity_number  String?
+  identity_number  String?                 @unique
   identity_date    DateTime?
   identity_place   String?
-  social_insurance String?
+  social_insurance String?                 @unique
   birthday         DateTime?
   phone            String?
   email            String?
@@ -341,6 +341,12 @@ model sessions {
 
   @@index([expire], map: "IDX_session_expire")
   @@schema("public")
+}
+
+model schema_migrations {
+  version String @id @unique(map: "schema_migrations_version_idx") @db.VarChar(14)
+
+  @@schema("auth")
 }
 
 enum PersonRoleType {

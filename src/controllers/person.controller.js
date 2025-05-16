@@ -6,6 +6,19 @@ const formatGender = (gender) => {
   return gender ? "Nam" : "Nữ";
 };
 
+// Helper function to normalize empty values to null and trim whitespace
+const normalizeEmptyToNull = (value) => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  // Trim whitespace if it's a string
+  if (typeof value === "string") {
+    const normalized = value.trim().replace(/\s+/g, " ");
+    return normalized === "" ? null : normalized;
+  }
+  return value;
+};
+
 // Tạo person mới
 export const createPerson = async (req, res) => {
   try {
@@ -21,17 +34,47 @@ export const createPerson = async (req, res) => {
       email,
     } = req.body;
 
+    // Normalize values
+    const normalizedIdentityNumber = normalizeEmptyToNull(identity_number);
+    const normalizedSocialInsurance = normalizeEmptyToNull(social_insurance);
+
+    // Check if identity_number already exists
+    if (normalizedIdentityNumber) {
+      const existingPerson = await prisma.person.findUnique({
+        where: { identity_number: normalizedIdentityNumber },
+      });
+      if (existingPerson) {
+        return res.status(400).json({
+          success: false,
+          message: "Số CCCD/CMND đã tồn tại",
+        });
+      }
+    }
+
+    // Check if social_insurance already exists
+    if (normalizedSocialInsurance) {
+      const existingPerson = await prisma.person.findUnique({
+        where: { social_insurance: normalizedSocialInsurance },
+      });
+      if (existingPerson) {
+        return res.status(400).json({
+          success: false,
+          message: "Số BHXH đã tồn tại",
+        });
+      }
+    }
+
     const newPerson = await prisma.person.create({
       data: {
         name,
-        identity_number: identity_number || null,
+        identity_number: normalizedIdentityNumber,
         identity_date: identity_date ? new Date(identity_date) : null,
-        identity_place: identity_place || null,
-        social_insurance: social_insurance || null,
+        identity_place: normalizeEmptyToNull(identity_place),
+        social_insurance: normalizedSocialInsurance,
         birthday: birthday ? new Date(birthday) : null,
         gender: gender === "Nam",
-        phone: phone || null,
-        email: email || null,
+        phone: normalizeEmptyToNull(phone),
+        email: normalizeEmptyToNull(email),
         created_by: req.user.id,
       },
       include: {
@@ -53,6 +96,17 @@ export const createPerson = async (req, res) => {
       },
     });
   } catch (error) {
+    // Handle Prisma unique constraint error
+    if (error.code === "P2002") {
+      return res.status(400).json({
+        success: false,
+        message: `${
+          error.meta.target[0] === "identity_number"
+            ? "Số CCCD/CMND"
+            : "Số BHXH"
+        } đã tồn tại`,
+      });
+    }
     res.status(500).json({
       success: false,
       message: "Lỗi server",
@@ -212,18 +266,54 @@ export const updatePerson = async (req, res) => {
       email,
     } = req.body;
 
+    // Normalize values
+    const normalizedIdentityNumber = normalizeEmptyToNull(identity_number);
+    const normalizedSocialInsurance = normalizeEmptyToNull(social_insurance);
+
+    // Check if identity_number already exists (excluding current person)
+    if (normalizedIdentityNumber) {
+      const existingPerson = await prisma.person.findFirst({
+        where: {
+          identity_number: normalizedIdentityNumber,
+          NOT: { id: parseInt(id) },
+        },
+      });
+      if (existingPerson) {
+        return res.status(400).json({
+          success: false,
+          message: "Số CCCD/CMND đã tồn tại",
+        });
+      }
+    }
+
+    // Check if social_insurance already exists (excluding current person)
+    if (normalizedSocialInsurance) {
+      const existingPerson = await prisma.person.findFirst({
+        where: {
+          social_insurance: normalizedSocialInsurance,
+          NOT: { id: parseInt(id) },
+        },
+      });
+      if (existingPerson) {
+        return res.status(400).json({
+          success: false,
+          message: "Số BHXH đã tồn tại",
+        });
+      }
+    }
+
     const updatedPerson = await prisma.person.update({
       where: { id: parseInt(id) },
       data: {
         name,
-        identity_number,
+        identity_number: normalizedIdentityNumber,
         identity_date: identity_date ? new Date(identity_date) : null,
-        identity_place,
-        social_insurance,
+        identity_place: normalizeEmptyToNull(identity_place),
+        social_insurance: normalizedSocialInsurance,
         birthday: birthday ? new Date(birthday) : null,
         gender: gender === "Nam",
-        phone,
-        email,
+        phone: normalizeEmptyToNull(phone),
+        email: normalizeEmptyToNull(email),
       },
     });
 
@@ -236,6 +326,17 @@ export const updatePerson = async (req, res) => {
       },
     });
   } catch (error) {
+    // Handle Prisma unique constraint error
+    if (error.code === "P2002") {
+      return res.status(400).json({
+        success: false,
+        message: `${
+          error.meta.target[0] === "identity_number"
+            ? "Số CCCD/CMND"
+            : "Số BHXH"
+        } đã tồn tại`,
+      });
+    }
     res.status(500).json({
       success: false,
       message: "Lỗi server",

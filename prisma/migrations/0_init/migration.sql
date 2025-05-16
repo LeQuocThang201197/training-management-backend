@@ -305,6 +305,13 @@ CREATE TABLE "public"."sessions" (
     CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
 );
 
+-- CreateTable
+CREATE TABLE "auth"."schema_migrations" (
+    "version" VARCHAR(14) NOT NULL,
+
+    CONSTRAINT "schema_migrations_pkey" PRIMARY KEY ("version")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "PersonRole_name_key" ON "training_management"."PersonRole"("name");
 
@@ -352,6 +359,9 @@ CREATE UNIQUE INDEX "Role_name_key" ON "auth"."Role"("name");
 
 -- CreateIndex
 CREATE INDEX "IDX_session_expire" ON "public"."sessions"("expire");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "schema_migrations_version_idx" ON "auth"."schema_migrations"("version");
 
 -- AddForeignKey
 ALTER TABLE "auth"."Profile" ADD CONSTRAINT "Profile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "auth"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
