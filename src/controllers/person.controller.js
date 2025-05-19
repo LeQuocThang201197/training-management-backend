@@ -40,7 +40,7 @@ export const createPerson = async (req, res) => {
 
     // Check if identity_number already exists
     if (normalizedIdentityNumber) {
-      const existingPerson = await prisma.person.findUnique({
+      const existingPerson = await prisma.person.findFirst({
         where: { identity_number: normalizedIdentityNumber },
       });
       if (existingPerson) {
@@ -53,7 +53,7 @@ export const createPerson = async (req, res) => {
 
     // Check if social_insurance already exists
     if (normalizedSocialInsurance) {
-      const existingPerson = await prisma.person.findUnique({
+      const existingPerson = await prisma.person.findFirst({
         where: { social_insurance: normalizedSocialInsurance },
       });
       if (existingPerson) {
@@ -272,7 +272,7 @@ export const updatePerson = async (req, res) => {
 
     // Check if identity_number already exists (excluding current person)
     if (normalizedIdentityNumber) {
-      const existingPerson = await prisma.person.findFirst({
+      const existingPerson = await prisma.person.findUnique({
         where: {
           identity_number: normalizedIdentityNumber,
           NOT: { id: parseInt(id) },
@@ -288,7 +288,7 @@ export const updatePerson = async (req, res) => {
 
     // Check if social_insurance already exists (excluding current person)
     if (normalizedSocialInsurance) {
-      const existingPerson = await prisma.person.findFirst({
+      const existingPerson = await prisma.person.findUnique({
         where: {
           social_insurance: normalizedSocialInsurance,
           NOT: { id: parseInt(id) },
