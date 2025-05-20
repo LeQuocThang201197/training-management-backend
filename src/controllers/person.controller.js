@@ -225,6 +225,28 @@ export const getPersonById = async (req, res) => {
     const { id } = req.params;
     const person = await prisma.person.findUnique({
       where: { id: parseInt(id) },
+      include: {
+        participations: {
+          include: {
+            concentration: {
+              include: {
+                team: {
+                  include: {
+                    sport: true,
+                  },
+                },
+              },
+            },
+            role: true,
+            organization: true,
+          },
+          orderBy: {
+            concentration: {
+              startDate: "desc",
+            },
+          },
+        },
+      },
     });
 
     if (!person) {
@@ -234,12 +256,22 @@ export const getPersonById = async (req, res) => {
       });
     }
 
+    // Format response
+    const formattedPerson = {
+      ...person,
+      gender: formatGender(person.gender),
+      participations: person.participations.map((p) => ({
+        ...p,
+        concentration: {
+          ...p.concentration,
+          team: formatTeamInfo(p.concentration.team),
+        },
+      })),
+    };
+
     res.json({
       success: true,
-      data: {
-        ...person,
-        gender: formatGender(person.gender),
-      },
+      data: formattedPerson,
     });
   } catch (error) {
     res.status(500).json({
