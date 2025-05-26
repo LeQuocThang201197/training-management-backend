@@ -235,10 +235,51 @@ export const getPersonById = async (req, res) => {
                     sport: true,
                   },
                 },
+                // Thêm thông tin về các đợt tập huấn
+                trainings: {
+                  include: {
+                    participants: {
+                      where: {
+                        participation: {
+                          person_id: parseInt(id),
+                        },
+                      },
+                    },
+                  },
+                  orderBy: {
+                    startDate: "desc",
+                  },
+                },
+                // Thêm thông tin về các đợt thi đấu
+                competitions: {
+                  include: {
+                    participants: {
+                      where: {
+                        participation: {
+                          person_id: parseInt(id),
+                        },
+                      },
+                    },
+                  },
+                  orderBy: {
+                    startDate: "desc",
+                  },
+                },
               },
             },
             role: true,
             organization: true,
+            // Thêm trực tiếp các participations của training và competition
+            trainingParticipations: {
+              include: {
+                training: true,
+              },
+            },
+            competitionParticipations: {
+              include: {
+                competition: true,
+              },
+            },
           },
           orderBy: {
             concentration: {
@@ -265,6 +306,34 @@ export const getPersonById = async (req, res) => {
         concentration: {
           ...p.concentration,
           team: formatTeamInfo(p.concentration.team),
+          // Format lại danh sách tập huấn
+          trainings: p.concentration.trainings.map((t) => ({
+            id: t.id,
+            location: t.location,
+            startDate: t.startDate,
+            endDate: t.endDate,
+            note: t.note,
+            isForeign: t.isForeign,
+            participation_detail: t.participants[0]?.note || null,
+          })),
+          // Format lại danh sách thi đấu
+          competitions: p.concentration.competitions.map((c) => ({
+            id: c.id,
+            name: c.name,
+            location: c.location,
+            startDate: c.startDate,
+            endDate: c.endDate,
+            note: c.note,
+            isForeign: c.isForeign,
+            is_confirmed: c.is_confirmed,
+            participation_detail: c.participants[0]
+              ? {
+                  startDate: c.participants[0].startDate,
+                  endDate: c.participants[0].endDate,
+                  note: c.participants[0].note,
+                }
+              : null,
+          })),
         },
       })),
     };
