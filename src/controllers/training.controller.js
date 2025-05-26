@@ -87,8 +87,20 @@ export const updateTraining = async (req, res) => {
 export const deleteTraining = async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.training.delete({
-      where: { id: parseInt(id) },
+
+    // Sử dụng transaction để đảm bảo tính nhất quán của dữ liệu
+    await prisma.$transaction(async (tx) => {
+      // 1. Xóa tất cả các bản ghi trong TrainingParticipant
+      await tx.trainingParticipant.deleteMany({
+        where: {
+          training_id: parseInt(id),
+        },
+      });
+
+      // 2. Sau đó xóa đợt tập huấn
+      await tx.training.delete({
+        where: { id: parseInt(id) },
+      });
     });
 
     res.json({
