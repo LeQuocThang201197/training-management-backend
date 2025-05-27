@@ -228,6 +228,7 @@ export const getPersonById = async (req, res) => {
       include: {
         participations: {
           include: {
+            // Include concentration basic info
             concentration: {
               include: {
                 team: {
@@ -235,49 +236,31 @@ export const getPersonById = async (req, res) => {
                     sport: true,
                   },
                 },
-                // Thêm thông tin về các đợt tập huấn
-                trainings: {
-                  include: {
-                    participants: {
-                      where: {
-                        participation: {
-                          person_id: parseInt(id),
-                        },
-                      },
-                    },
-                  },
-                  orderBy: {
-                    startDate: "desc",
-                  },
-                },
-                // Thêm thông tin về các đợt thi đấu
-                competitions: {
-                  include: {
-                    participants: {
-                      where: {
-                        participation: {
-                          person_id: parseInt(id),
-                        },
-                      },
-                    },
-                  },
-                  orderBy: {
-                    startDate: "desc",
-                  },
-                },
               },
             },
+            // Include role and organization
             role: true,
             organization: true,
-            // Thêm trực tiếp các participations của training và competition
+            // Include only the trainings this person participated in
             trainingParticipations: {
               include: {
                 training: true,
               },
+              orderBy: {
+                training: {
+                  startDate: "desc",
+                },
+              },
             },
+            // Include only the competitions this person participated in
             competitionParticipations: {
               include: {
                 competition: true,
+              },
+              orderBy: {
+                competition: {
+                  startDate: "desc",
+                },
               },
             },
           },
@@ -299,42 +282,60 @@ export const getPersonById = async (req, res) => {
 
     // Format response
     const formattedPerson = {
-      ...person,
+      // Personal Information
+      id: person.id,
+      name: person.name,
+      identity_number: person.identity_number,
+      identity_date: person.identity_date,
+      identity_place: person.identity_place,
+      social_insurance: person.social_insurance,
+      birthday: person.birthday,
+      phone: person.phone,
+      email: person.email,
       gender: formatGender(person.gender),
+
+      // Format participations
       participations: person.participations.map((p) => ({
-        ...p,
+        id: p.id,
         concentration: {
-          ...p.concentration,
-          team: formatTeamInfo(p.concentration.team),
-          // Format lại danh sách tập huấn
-          trainings: p.concentration.trainings.map((t) => ({
-            id: t.id,
-            location: t.location,
-            startDate: t.startDate,
-            endDate: t.endDate,
-            note: t.note,
-            isForeign: t.isForeign,
-            participation_detail: t.participants[0]?.note || null,
-          })),
-          // Format lại danh sách thi đấu
-          competitions: p.concentration.competitions.map((c) => ({
-            id: c.id,
-            name: c.name,
-            location: c.location,
-            startDate: c.startDate,
-            endDate: c.endDate,
-            note: c.note,
-            isForeign: c.isForeign,
-            is_confirmed: c.is_confirmed,
-            participation_detail: c.participants[0]
-              ? {
-                  startDate: c.participants[0].startDate,
-                  endDate: c.participants[0].endDate,
-                  note: c.participants[0].note,
-                }
-              : null,
-          })),
+          id: p.concentration.id,
+          location: p.concentration.location,
+          startDate: p.concentration.startDate,
+          endDate: p.concentration.endDate,
+          team: {
+            sport: p.concentration.team.sport.name,
+            type: formatTeamType(p.concentration.team.type),
+            gender: formatTeamGender(p.concentration.team.gender),
+          },
         },
+        role: {
+          name: p.role.name,
+          type: p.role.type,
+        },
+        organization: {
+          name: p.organization.name,
+          type: p.organization.type,
+        },
+        // Format trainings this person participated in
+        trainings: p.trainingParticipations.map((tp) => ({
+          id: tp.training.id,
+          location: tp.training.location,
+          startDate: tp.training.startDate,
+          endDate: tp.training.endDate,
+          isForeign: tp.training.isForeign,
+          note: tp.note || null,
+        })),
+        // Format competitions this person participated in
+        competitions: p.competitionParticipations.map((cp) => ({
+          id: cp.competition.id,
+          name: cp.competition.name,
+          location: cp.competition.location,
+          startDate: cp.startDate,
+          endDate: cp.endDate,
+          isForeign: cp.competition.isForeign,
+          is_confirmed: cp.competition.is_confirmed,
+          note: cp.note || null,
+        })),
       })),
     };
 
