@@ -288,24 +288,9 @@ export const getPersonById = async (req, res) => {
 
     // Format response
     const formattedPerson = {
-      // Personal Information
-      id: person.id,
-      name: person.name,
-      identity_number: person.identity_number,
-      identity_date: person.identity_date,
-      identity_place: person.identity_place,
-      social_insurance: person.social_insurance,
-      birthday: person.birthday,
-      phone: person.phone,
-      email: person.email,
+      ...person,
       gender: formatGender(person.gender),
-      // Add metadata
-      createdAt: person.createdAt,
-      updatedAt: person.updatedAt,
-      created_by: person.created_by,
       creator: person.creator,
-
-      // Format participations
       participations: person.participations.map((p) => ({
         id: p.id,
         role: {
