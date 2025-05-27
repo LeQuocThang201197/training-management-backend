@@ -226,6 +226,12 @@ export const getPersonById = async (req, res) => {
     const person = await prisma.person.findUnique({
       where: { id: parseInt(id) },
       include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         participations: {
           include: {
             // Include concentration basic info
@@ -293,6 +299,11 @@ export const getPersonById = async (req, res) => {
       phone: person.phone,
       email: person.email,
       gender: formatGender(person.gender),
+      // Add metadata
+      createdAt: person.createdAt,
+      updatedAt: person.updatedAt,
+      created_by: person.created_by,
+      creator: person.creator,
 
       // Format participations
       participations: person.participations.map((p) => ({
