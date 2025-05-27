@@ -297,6 +297,14 @@ export const getPersonById = async (req, res) => {
       // Format participations
       participations: person.participations.map((p) => ({
         id: p.id,
+        role: {
+          name: p.role.name,
+          type: p.role.type,
+        },
+        organization: {
+          name: p.organization.name,
+          type: p.organization.type,
+        },
         concentration: {
           id: p.concentration.id,
           location: p.concentration.location,
@@ -307,35 +315,27 @@ export const getPersonById = async (req, res) => {
             type: formatTeamType(p.concentration.team.type),
             gender: formatTeamGender(p.concentration.team.gender),
           },
+          // Move trainings inside concentration
+          trainings: p.trainingParticipations.map((tp) => ({
+            id: tp.training.id,
+            location: tp.training.location,
+            startDate: tp.training.startDate,
+            endDate: tp.training.endDate,
+            isForeign: tp.training.isForeign,
+            note: tp.note || null,
+          })),
+          // Move competitions inside concentration
+          competitions: p.competitionParticipations.map((cp) => ({
+            id: cp.competition.id,
+            name: cp.competition.name,
+            location: cp.competition.location,
+            startDate: cp.startDate,
+            endDate: cp.endDate,
+            isForeign: cp.competition.isForeign,
+            is_confirmed: cp.competition.is_confirmed,
+            note: cp.note || null,
+          })),
         },
-        role: {
-          name: p.role.name,
-          type: p.role.type,
-        },
-        organization: {
-          name: p.organization.name,
-          type: p.organization.type,
-        },
-        // Format trainings this person participated in
-        trainings: p.trainingParticipations.map((tp) => ({
-          id: tp.training.id,
-          location: tp.training.location,
-          startDate: tp.training.startDate,
-          endDate: tp.training.endDate,
-          isForeign: tp.training.isForeign,
-          note: tp.note || null,
-        })),
-        // Format competitions this person participated in
-        competitions: p.competitionParticipations.map((cp) => ({
-          id: cp.competition.id,
-          name: cp.competition.name,
-          location: cp.competition.location,
-          startDate: cp.startDate,
-          endDate: cp.endDate,
-          isForeign: cp.competition.isForeign,
-          is_confirmed: cp.competition.is_confirmed,
-          note: cp.note || null,
-        })),
       })),
     };
 
