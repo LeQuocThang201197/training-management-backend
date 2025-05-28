@@ -729,60 +729,6 @@ export const updatePersonParticipation = async (req, res) => {
   }
 };
 
-// Cập nhật name_search cho tất cả records
-export const updateAllNameSearch = async (req, res) => {
-  try {
-    // Lấy tất cả person chưa có name_search
-    const persons = await prisma.person.findMany({
-      where: {
-        name_search: null,
-      },
-      select: {
-        id: true,
-        name: true,
-      },
-    });
-
-    console.log(`Found ${persons.length} persons need to update name_search`);
-
-    // Cập nhật từng batch 100 records
-    const batchSize = 100;
-    const batches = Math.ceil(persons.length / batchSize);
-
-    for (let i = 0; i < batches; i++) {
-      const start = i * batchSize;
-      const end = start + batchSize;
-      const batch = persons.slice(start, end);
-
-      // Update batch trong một transaction
-      await prisma.$transaction(
-        batch.map((person) =>
-          prisma.person.update({
-            where: { id: person.id },
-            data: {
-              name_search: normalizeSearchText(person.name),
-            },
-          })
-        )
-      );
-
-      console.log(`Updated batch ${i + 1}/${batches}`);
-    }
-
-    res.json({
-      success: true,
-      message: `Đã cập nhật name_search cho ${persons.length} người`,
-    });
-  } catch (error) {
-    console.error("Update name_search error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server",
-      error: error.message,
-    });
-  }
-};
-
 // Helper functions
 const formatTeamType = (type) => {
   const types = {
