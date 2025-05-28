@@ -30,10 +30,6 @@ router.put(
   checkPermission("UPDATE_PERSON_PARTICIPATION"),
   updatePersonParticipation
 );
-router.post(
-  "/update-name-search",
-  checkPermission("UPDATE_PERSON"),
-  updateAllNameSearch
-);
+router.post("/update-name-search", updateAllNameSearch);
 
 export default router;
