@@ -31,6 +31,20 @@ const normalizeSearchText = (text) => {
     .replace(/Đ/g, "D");
 };
 
+// Thêm helper function để chuẩn hóa tên
+const normalizePersonName = (name) => {
+  if (!name) return null;
+
+  // Trim và thay thế nhiều dấu cách thành một dấu cách
+  const trimmed = name.trim().replace(/\s+/g, " ");
+
+  // Capitalize từng từ trong tên
+  return trimmed
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
 // Tạo person mới
 export const createPerson = async (req, res) => {
   try {
@@ -49,6 +63,7 @@ export const createPerson = async (req, res) => {
     // Normalize values
     const normalizedIdentityNumber = normalizeEmptyToNull(identity_number);
     const normalizedSocialInsurance = normalizeEmptyToNull(social_insurance);
+    const normalizedName = normalizePersonName(name);
 
     // Check if identity_number already exists
     if (normalizedIdentityNumber) {
@@ -78,8 +93,8 @@ export const createPerson = async (req, res) => {
 
     const newPerson = await prisma.person.create({
       data: {
-        name: normalizeEmptyToNull(name),
-        name_search: normalizeSearchText(name),
+        name: normalizedName,
+        name_search: normalizeSearchText(normalizedName),
         identity_number: normalizedIdentityNumber,
         identity_date: identity_date ? new Date(identity_date) : null,
         identity_place: normalizeEmptyToNull(identity_place),
@@ -380,6 +395,7 @@ export const updatePerson = async (req, res) => {
     // Normalize values
     const normalizedIdentityNumber = normalizeEmptyToNull(identity_number);
     const normalizedSocialInsurance = normalizeEmptyToNull(social_insurance);
+    const normalizedName = normalizePersonName(name);
 
     // Check if identity_number already exists (excluding current person)
     if (normalizedIdentityNumber) {
@@ -420,8 +436,8 @@ export const updatePerson = async (req, res) => {
     const updatedPerson = await prisma.person.update({
       where: { id: parseInt(id) },
       data: {
-        name: normalizeEmptyToNull(name),
-        name_search: normalizeSearchText(name),
+        name: normalizedName,
+        name_search: normalizeSearchText(normalizedName),
         identity_number: normalizedIdentityNumber,
         identity_date: identity_date ? new Date(identity_date) : null,
         identity_place: normalizeEmptyToNull(identity_place),
