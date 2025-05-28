@@ -9,6 +9,7 @@ import {
   getPersonParticipations,
   attachPersonToConcentration,
   updatePersonParticipation,
+  updateAllNameSearch,
 } from "../controllers/person.controller.js";
 
 const router = express.Router();
@@ -28,6 +29,11 @@ router.put(
   "/:id/participations/:participationId",
   checkPermission("UPDATE_PERSON_PARTICIPATION"),
   updatePersonParticipation
+);
+router.post(
+  "/update-name-search",
+  checkPermission("UPDATE_PERSON"),
+  updateAllNameSearch
 );
 
 export default router;
