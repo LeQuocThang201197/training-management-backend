@@ -142,20 +142,10 @@ export const getPersons = async (req, res) => {
     // Xây dựng điều kiện where
     const where = {
       ...(q && {
-        OR: [
-          {
-            name: {
-              contains: q,
-              mode: "insensitive",
-            },
-          },
-          {
-            name_search: {
-              contains: normalizeSearchText(q),
-              mode: "insensitive",
-            },
-          },
-        ],
+        name_search: {
+          contains: normalizeSearchText(q),
+          mode: "insensitive",
+        },
       }),
     };
 
