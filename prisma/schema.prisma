@@ -180,6 +180,7 @@ model PaperOnConcentration {
 model Person {
   id               Int                     @id @default(autoincrement())
   name             String
+  name_search      String?                 @db.Text
   identity_number  String?                 @unique
   identity_date    DateTime?
   identity_place   String?
@@ -194,6 +195,7 @@ model Person {
   creator          User                    @relation("creator", fields: [created_by], references: [id])
   participations   PersonOnConcentration[]
 
+  @@index([name_search])
   @@schema("training_management")
 }
 

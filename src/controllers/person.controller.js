@@ -19,6 +19,18 @@ const normalizeEmptyToNull = (value) => {
   return value;
 };
 
+// Helper function để chuẩn hóa text search
+const normalizeSearchText = (text) => {
+  if (!text) return null;
+  // Chuyển về chữ thường và bỏ dấu
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
+};
+
 // Tạo person mới
 export const createPerson = async (req, res) => {
   try {
@@ -67,6 +79,7 @@ export const createPerson = async (req, res) => {
     const newPerson = await prisma.person.create({
       data: {
         name: normalizeEmptyToNull(name),
+        name_search: normalizeSearchText(name),
         identity_number: normalizedIdentityNumber,
         identity_date: identity_date ? new Date(identity_date) : null,
         identity_place: normalizeEmptyToNull(identity_place),
@@ -129,10 +142,20 @@ export const getPersons = async (req, res) => {
     // Xây dựng điều kiện where
     const where = {
       ...(q && {
-        name: {
-          contains: q,
-          mode: "insensitive",
-        },
+        OR: [
+          {
+            name: {
+              contains: q,
+              mode: "insensitive",
+            },
+          },
+          {
+            name_search: {
+              contains: normalizeSearchText(q),
+              mode: "insensitive",
+            },
+          },
+        ],
       }),
     };
 
@@ -408,6 +431,7 @@ export const updatePerson = async (req, res) => {
       where: { id: parseInt(id) },
       data: {
         name: normalizeEmptyToNull(name),
+        name_search: normalizeSearchText(name),
         identity_number: normalizedIdentityNumber,
         identity_date: identity_date ? new Date(identity_date) : null,
         identity_place: normalizeEmptyToNull(identity_place),
