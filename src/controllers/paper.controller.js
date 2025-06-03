@@ -25,6 +25,17 @@ export const createPaper = async (req, res) => {
       req.body;
     const file = req.file;
 
+    // Validation: number và code phải cùng có hoặc cùng không có
+    const hasNumber = number && number.toString().trim() !== "";
+    const hasCode = code && code.toString().trim() !== "";
+
+    if (hasNumber !== hasCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Số văn bản và mã văn bản phải cùng có hoặc cùng để trống",
+      });
+    }
+
     // Upload file using common function - để storage.js xử lý tên file
     let fileData = null;
     if (file) {
@@ -33,8 +44,8 @@ export const createPaper = async (req, res) => {
 
     const newPaper = await prisma.paper.create({
       data: {
-        number: parseInt(number),
-        code,
+        number: hasNumber ? parseInt(number) : null,
+        code: hasCode ? code.trim() : null,
         publisher,
         type,
         content,
@@ -60,6 +71,18 @@ export const createPaper = async (req, res) => {
       data: newPaper,
     });
   } catch (error) {
+    // Xử lý lỗi unique constraint
+    if (
+      error.code === "P2002" &&
+      error.meta?.target?.includes("number") &&
+      error.meta?.target?.includes("code")
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Số văn bản và mã văn bản này đã tồn tại",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Lỗi server",
@@ -203,11 +226,22 @@ export const updatePaperInfo = async (req, res) => {
     const { number, code, publisher, type, content, related_year, date } =
       req.body;
 
+    // Validation: number và code phải cùng có hoặc cùng không có
+    const hasNumber = number && number.toString().trim() !== "";
+    const hasCode = code && code.toString().trim() !== "";
+
+    if (hasNumber !== hasCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Số văn bản và mã văn bản phải cùng có hoặc cùng để trống",
+      });
+    }
+
     const updatedPaper = await prisma.paper.update({
       where: { id: parseInt(id) },
       data: {
-        number: parseInt(number),
-        code,
+        number: hasNumber ? parseInt(number) : null,
+        code: hasCode ? code.trim() : null,
         publisher,
         type,
         content,
@@ -222,6 +256,18 @@ export const updatePaperInfo = async (req, res) => {
       data: updatedPaper,
     });
   } catch (error) {
+    // Xử lý lỗi unique constraint
+    if (
+      error.code === "P2002" &&
+      error.meta?.target?.includes("number") &&
+      error.meta?.target?.includes("code")
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Số văn bản và mã văn bản này đã tồn tại",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Lỗi server",
