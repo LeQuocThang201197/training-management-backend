@@ -296,15 +296,25 @@ export const deletePaper = async (req, res) => {
       });
     }
 
-    // Xóa file từ storage nếu có
+    // Sử dụng transaction để đảm bảo tính nhất quán
+    await prisma.$transaction(async (tx) => {
+      // Xóa tất cả liên kết với concentrations trước
+      await tx.paperOnConcentration.deleteMany({
+        where: {
+          paper_id: parseInt(id),
+        },
+      });
+
+      // Sau đó xóa paper
+      await tx.paper.delete({
+        where: { id: parseInt(id) },
+      });
+    });
+
+    // Xóa file từ storage nếu có (sau khi xóa thành công từ database)
     if (paper.file_path) {
       await deleteFileFromStorage(paper.file_path);
     }
-
-    // Xóa paper từ database
-    await prisma.paper.delete({
-      where: { id: parseInt(id) },
-    });
 
     res.json({
       success: true,
