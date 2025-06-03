@@ -350,7 +350,7 @@ export const getPaperFile = async (req, res) => {
   }
 };
 
-// Thêm endpoint mới để download file
+// Cải thiện endpoint download để tạo signed URL
 export const downloadPaperFile = async (req, res) => {
   try {
     const { id } = req.params;
@@ -365,36 +365,28 @@ export const downloadPaperFile = async (req, res) => {
       });
     }
 
-    // Lấy file từ Supabase Storage
+    // Tạo signed URL với header Content-Disposition để force download
     const fileName = paper.file_path.split("/").pop();
     const { data, error } = await supabase.storage
       .from("papers")
-      .download(fileName);
+      .createSignedUrl(fileName, 60, {
+        download: paper.file_name || fileName, // Tên file khi download
+      });
 
     if (error) {
       throw error;
     }
 
-    // Set headers để force download
-    const fileExtension = paper.file_name?.split(".").pop()?.toLowerCase();
-    const mimeType = getMimeType(fileExtension);
-
-    res.setHeader("Content-Type", mimeType);
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${encodeURIComponent(
-        paper.file_name || fileName
-      )}"`
-    );
-    res.setHeader("Content-Length", data.size);
-
-    // Stream file data
-    const buffer = Buffer.from(await data.arrayBuffer());
-    res.send(buffer);
+    res.json({
+      success: true,
+      downloadUrl: data.signedUrl,
+      fileName: paper.file_name,
+      type: "download",
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Lỗi khi tải file",
+      message: "Lỗi khi tạo link tải file",
       error: error.message,
     });
   }
