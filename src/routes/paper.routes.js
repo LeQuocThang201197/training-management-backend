@@ -11,6 +11,7 @@ import {
   detachConcentrationFromPaper,
   attachConcentrationToPaper,
   updatePaperFile,
+  downloadPaperFile,
 } from "../controllers/paper.controller.js";
 import { upload } from "../config/multer.js";
 
@@ -40,5 +41,6 @@ router.delete(
   detachConcentrationFromPaper
 );
 router.post("/:id/concentrations", attachConcentrationToPaper);
+router.get("/:id/download", downloadPaperFile);
 
 export default router;

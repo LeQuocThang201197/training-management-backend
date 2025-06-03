@@ -338,6 +338,8 @@ export const getPaperFile = async (req, res) => {
     res.json({
       success: true,
       url: paper.file_path,
+      fileName: paper.file_name,
+      type: "preview",
     });
   } catch (error) {
     res.status(500).json({
@@ -346,6 +348,72 @@ export const getPaperFile = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+// Thêm endpoint mới để download file
+export const downloadPaperFile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const paper = await prisma.paper.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!paper || !paper.file_path) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy file",
+      });
+    }
+
+    // Lấy file từ Supabase Storage
+    const fileName = paper.file_path.split("/").pop();
+    const { data, error } = await supabase.storage
+      .from("papers")
+      .download(fileName);
+
+    if (error) {
+      throw error;
+    }
+
+    // Set headers để force download
+    const fileExtension = paper.file_name?.split(".").pop()?.toLowerCase();
+    const mimeType = getMimeType(fileExtension);
+
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${encodeURIComponent(
+        paper.file_name || fileName
+      )}"`
+    );
+    res.setHeader("Content-Length", data.size);
+
+    // Stream file data
+    const buffer = Buffer.from(await data.arrayBuffer());
+    res.send(buffer);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi tải file",
+      error: error.message,
+    });
+  }
+};
+
+// Helper function để xác định MIME type
+const getMimeType = (extension) => {
+  const mimeTypes = {
+    pdf: "application/pdf",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    txt: "text/plain",
+  };
+  return mimeTypes[extension] || "application/octet-stream";
 };
 
 // Lấy danh sách đợt tập trung liên quan đến giấy tờ
