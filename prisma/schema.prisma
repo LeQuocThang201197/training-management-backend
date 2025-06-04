@@ -104,6 +104,7 @@ model Paper {
   creator        User                   @relation("creator", fields: [created_by], references: [id])
   concentrations PaperOnConcentration[]
 
+  @@unique([number, code])
   @@schema("training_management")
 }
 
