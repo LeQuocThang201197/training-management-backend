@@ -19,11 +19,17 @@ import {
   getParticipantStats,
   getRooms,
   getAvailablePapers,
+  searchConcentrations,
 } from "../controllers/concentration.controller.js";
 
 const router = express.Router();
 
 router.get("/rooms", getRooms);
+router.get(
+  "/search",
+  checkPermission("READ_CONCENTRATION"),
+  searchConcentrations
+);
 router.get("/", checkPermission("READ_CONCENTRATION"), getConcentrations);
 router.post("/", checkPermission("CREATE_CONCENTRATION"), createConcentration);
 router.get("/:id", checkPermission("READ_CONCENTRATION"), getConcentrationById);
