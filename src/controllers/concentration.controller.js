@@ -997,7 +997,7 @@ export const searchConcentrations = async (req, res) => {
       q = "", // Query tìm kiếm (môn thể thao + địa điểm)
       year, // Năm của đợt tập trung
       teamType, // Loại đội (JUNIOR, ADULT, DISABILITY)
-      status, // Trạng thái: upcoming, active, complete
+      status, // Trạng thái: upcoming, active, completed
       page = 1,
       limit = 10,
     } = req.query;
@@ -1059,7 +1059,7 @@ export const searchConcentrations = async (req, res) => {
             },
           ],
         }),
-        ...(status === "complete" && {
+        ...(status === "completed" && {
           endDate: {
             lt: today, // Đã kết thúc
           },
@@ -1142,7 +1142,7 @@ export const searchConcentrations = async (req, res) => {
 
       let concentrationStatus = "upcoming";
       if (today > endDate) {
-        concentrationStatus = "complete";
+        concentrationStatus = "completed";
       } else if (today >= startDate && today <= endDate) {
         concentrationStatus = "active";
       }
