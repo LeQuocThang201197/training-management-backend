@@ -706,6 +706,21 @@ export const addParticipantToConcentration = async (req, res) => {
     const { id } = req.params;
     const { personId, roleId, organizationId, note } = req.body;
 
+    // Kiểm tra xem người này đã tham gia đợt tập trung này chưa
+    const existingParticipation = await prisma.personOnConcentration.findFirst({
+      where: {
+        person_id: parseInt(personId),
+        concentration_id: parseInt(id),
+      },
+    });
+
+    if (existingParticipation) {
+      return res.status(400).json({
+        success: false,
+        message: "Người này đã tham gia đợt tập trung này rồi",
+      });
+    }
+
     const participation = await prisma.personOnConcentration.create({
       data: {
         person_id: parseInt(personId),
