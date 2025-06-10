@@ -23,7 +23,7 @@ export const createConcentration = async (req, res) => {
       });
     }
 
-    // Kiểm tra overlap với các đợt tập trung khác của team
+    // Kiểm tra overlap với các đợt tập trung khác của team (soft warning)
     const existingConcentrations = await prisma.concentration.findMany({
       where: {
         teamId: parseInt(teamId),
@@ -36,13 +36,31 @@ export const createConcentration = async (req, res) => {
           },
         ],
       },
+      include: {
+        team: {
+          include: {
+            sport: true,
+          },
+        },
+      },
     });
 
+    // Collect warnings instead of blocking
+    let warnings = [];
     if (existingConcentrations.length > 0) {
-      return res.status(400).json({
-        success: false,
+      warnings.push({
+        type: "TEAM_OVERLAP",
         message: "Đội này đã có đợt tập trung trong khoảng thời gian này",
-        overlappingConcentrations: existingConcentrations,
+        severity: "medium",
+        overlappingConcentrations: existingConcentrations.map((c) => ({
+          id: c.id,
+          startDate: c.startDate,
+          endDate: c.endDate,
+          location: c.location,
+          teamName: `${c.team.sport.name} ${c.team.gender ? "Nam" : "Nữ"} ${
+            c.team.level
+          }`,
+        })),
       });
     }
 
@@ -82,8 +100,12 @@ export const createConcentration = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Tạo đợt tập trung thành công",
+      message:
+        warnings.length > 0
+          ? "Tạo đợt tập trung thành công (có cảnh báo)"
+          : "Tạo đợt tập trung thành công",
       data: formattedConcentration,
+      ...(warnings.length > 0 && { warnings }),
     });
   } catch (error) {
     res.status(500).json({
@@ -377,7 +399,7 @@ export const updateConcentration = async (req, res) => {
       });
     }
 
-    // Kiểm tra overlap với các đợt tập trung khác của team (trừ đợt hiện tại)
+    // Kiểm tra overlap với các đợt tập trung khác của team (trừ đợt hiện tại) - soft warning
     const existingConcentrations = await prisma.concentration.findMany({
       where: {
         teamId: parseInt(teamId),
@@ -393,13 +415,31 @@ export const updateConcentration = async (req, res) => {
           },
         ],
       },
+      include: {
+        team: {
+          include: {
+            sport: true,
+          },
+        },
+      },
     });
 
+    // Collect warnings instead of blocking
+    let warnings = [];
     if (existingConcentrations.length > 0) {
-      return res.status(400).json({
-        success: false,
+      warnings.push({
+        type: "TEAM_OVERLAP",
         message: "Đội này đã có đợt tập trung trong khoảng thời gian này",
-        overlappingConcentrations: existingConcentrations,
+        severity: "medium",
+        overlappingConcentrations: existingConcentrations.map((c) => ({
+          id: c.id,
+          startDate: c.startDate,
+          endDate: c.endDate,
+          location: c.location,
+          teamName: `${c.team.sport.name} ${c.team.gender ? "Nam" : "Nữ"} ${
+            c.team.level
+          }`,
+        })),
       });
     }
 
@@ -458,8 +498,12 @@ export const updateConcentration = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Cập nhật đợt tập trung thành công",
+      message:
+        warnings.length > 0
+          ? "Cập nhật đợt tập trung thành công (có cảnh báo)"
+          : "Cập nhật đợt tập trung thành công",
       data: formattedConcentration,
+      ...(warnings.length > 0 && { warnings }),
     });
   } catch (error) {
     res.status(500).json({
