@@ -20,6 +20,7 @@ import {
   getRooms,
   getAvailablePapers,
   searchConcentrations,
+  copyParticipantsToConcentration,
 } from "../controllers/concentration.controller.js";
 
 const router = express.Router();
@@ -69,6 +70,11 @@ router.post(
   "/:id/participants",
   checkPermission("UPDATE_CONCENTRATION"),
   addParticipantToConcentration
+);
+router.post(
+  "/:id/participants/copy",
+  checkPermission("UPDATE_CONCENTRATION"),
+  copyParticipantsToConcentration
 );
 router.put(
   "/:id/participants/:participantId",

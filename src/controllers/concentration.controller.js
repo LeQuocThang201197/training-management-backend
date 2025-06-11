@@ -875,6 +875,121 @@ export const removeParticipant = async (req, res) => {
   }
 };
 
+// Copy người tham gia từ đợt tập trung khác
+export const copyParticipantsToConcentration = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sourceConcentrationId, participantIds } = req.body;
+
+    // Validate target concentration exists
+    const targetConcentration = await prisma.concentration.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!targetConcentration) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đợt tập trung đích",
+      });
+    }
+
+    // Validate source concentration exists
+    const sourceConcentration = await prisma.concentration.findUnique({
+      where: { id: parseInt(sourceConcentrationId) },
+    });
+
+    if (!sourceConcentration) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đợt tập trung nguồn",
+      });
+    }
+
+    // Lấy thông tin người tham gia từ source concentration
+    const sourceParticipants = await prisma.personOnConcentration.findMany({
+      where: {
+        id: { in: participantIds.map((id) => parseInt(id)) },
+        concentration_id: parseInt(sourceConcentrationId),
+      },
+      include: {
+        person: true,
+        role: true,
+        organization: true,
+      },
+    });
+
+    if (sourceParticipants.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy người tham gia nào trong đợt tập trung nguồn",
+      });
+    }
+
+    // Kiểm tra người tham gia đã tồn tại trong target concentration
+    const existingParticipants = await prisma.personOnConcentration.findMany({
+      where: {
+        concentration_id: parseInt(id),
+        person_id: { in: sourceParticipants.map((p) => p.person_id) },
+      },
+    });
+
+    const existingPersonIds = existingParticipants.map((p) => p.person_id);
+    const participantsToCopy = sourceParticipants.filter(
+      (p) => !existingPersonIds.includes(p.person_id)
+    );
+
+    // Bulk insert participants
+    const copiedParticipants = await Promise.all(
+      participantsToCopy.map(async (participant) => {
+        return await prisma.personOnConcentration.create({
+          data: {
+            person_id: participant.person_id,
+            concentration_id: parseInt(id),
+            role_id: participant.role_id,
+            organization_id: participant.organization_id,
+            note: participant.note || "",
+            assigned_by: req.user.id,
+          },
+          include: {
+            person: true,
+            role: true,
+            organization: true,
+          },
+        });
+      })
+    );
+
+    // Format gender trong response
+    const formattedParticipants = copiedParticipants.map((p) => ({
+      ...p,
+      person: {
+        ...p.person,
+        gender: formatGender(p.person.gender),
+      },
+    }));
+
+    res.json({
+      success: true,
+      message: `Đã copy ${copiedParticipants.length} người tham gia. ${existingPersonIds.length} người đã tồn tại.`,
+      data: {
+        copied: formattedParticipants,
+        summary: {
+          totalRequested: participantIds.length,
+          successfullyCopied: copiedParticipants.length,
+          alreadyExists: existingPersonIds.length,
+          notFound: participantIds.length - sourceParticipants.length,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
 // Lấy danh sách vắng mặt của một đợt tập trung
 export const getAbsencesByConcentration = async (req, res) => {
   try {
