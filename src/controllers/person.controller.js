@@ -69,11 +69,23 @@ export const createPerson = async (req, res) => {
     if (normalizedIdentityNumber) {
       const existingPerson = await prisma.person.findFirst({
         where: { identity_number: normalizedIdentityNumber },
+        select: {
+          id: true,
+          name: true,
+          gender: true,
+          birthday: true,
+          identity_number: true,
+          social_insurance: true,
+        },
       });
       if (existingPerson) {
         return res.status(400).json({
           success: false,
           message: "Số CCCD/CMND đã tồn tại",
+          duplicate_info: {
+            message: `Trùng với nhân sự: ${existingPerson.name}`,
+            person: existingPerson,
+          },
         });
       }
     }
@@ -82,11 +94,23 @@ export const createPerson = async (req, res) => {
     if (normalizedSocialInsurance) {
       const existingPerson = await prisma.person.findFirst({
         where: { social_insurance: normalizedSocialInsurance },
+        select: {
+          id: true,
+          name: true,
+          gender: true,
+          birthday: true,
+          identity_number: true,
+          social_insurance: true,
+        },
       });
       if (existingPerson) {
         return res.status(400).json({
           success: false,
           message: "Số BHXH đã tồn tại",
+          duplicate_info: {
+            message: `Trùng với nhân sự: ${existingPerson.name}`,
+            person: existingPerson,
+          },
         });
       }
     }
@@ -406,11 +430,21 @@ export const updatePerson = async (req, res) => {
             id: parseInt(id),
           },
         },
+        select: {
+          id: true,
+          name: true,
+          identity_number: true,
+          social_insurance: true,
+        },
       });
       if (existingPerson) {
         return res.status(400).json({
           success: false,
           message: "Số CCCD/CMND đã tồn tại",
+          duplicate_info: {
+            message: `Trùng với nhân sự: ${existingPerson.name} (ID: ${existingPerson.id})`,
+            person: existingPerson,
+          },
         });
       }
     }
@@ -424,11 +458,21 @@ export const updatePerson = async (req, res) => {
             id: parseInt(id),
           },
         },
+        select: {
+          id: true,
+          name: true,
+          identity_number: true,
+          social_insurance: true,
+        },
       });
       if (existingPerson) {
         return res.status(400).json({
           success: false,
           message: "Số BHXH đã tồn tại",
+          duplicate_info: {
+            message: `Trùng với nhân sự: ${existingPerson.name} (ID: ${existingPerson.id})`,
+            person: existingPerson,
+          },
         });
       }
     }
