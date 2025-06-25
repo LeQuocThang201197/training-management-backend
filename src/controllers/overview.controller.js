@@ -103,9 +103,13 @@ export const getCompetitionStats = async (req, res) => {
         endDate: { gte: startOfDay },
       },
       include: {
-        concentration: {
+        concentrations: {
           include: {
-            team: true,
+            concentration: {
+              include: {
+                team: true,
+              },
+            },
           },
         },
       },
@@ -137,11 +141,14 @@ export const getCompetitionStats = async (req, res) => {
 
     // Cập nhật số liệu thực tế
     competitions.forEach((comp) => {
-      const teamType = comp.concentration.team.type;
-      const locationType = comp.isForeign ? "foreign" : "domestic";
+      // Lấy team type từ concentration đầu tiên (hoặc có thể tính trung bình nếu cần)
+      if (comp.concentrations.length > 0) {
+        const teamType = comp.concentrations[0].concentration.team.type;
+        const locationType = comp.isForeign ? "foreign" : "domestic";
 
-      byTeamType[teamType].total += 1;
-      byTeamType[teamType][locationType] += 1;
+        byTeamType[teamType].total += 1;
+        byTeamType[teamType][locationType] += 1;
+      }
     });
 
     res.json({

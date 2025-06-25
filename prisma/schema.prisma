@@ -121,12 +121,12 @@ model Concentration {
   sequence_number Int
   created_by      Int
   room            ManagementRoom
-  competitions    Competition[]
   creator         User                    @relation("creator", fields: [created_by], references: [id])
   team            Team                    @relation(fields: [teamId], references: [id])
   papers          PaperOnConcentration[]
   participants    PersonOnConcentration[]
   trainings       Training[]
+  competitionConcentrations CompetitionConcentration[]
 
   @@index([teamId])
   @@schema("training_management")
@@ -264,13 +264,22 @@ model Competition {
   updatedAt        DateTime                 @updatedAt
   isForeign        Boolean
   is_confirmed     Boolean                  @default(false)
-  concentration_id Int
   created_by       Int
-  concentration    Concentration            @relation(fields: [concentration_id], references: [id])
   creator          User                     @relation("creator", fields: [created_by], references: [id])
   participants     CompetitionParticipant[]
+  concentrations   CompetitionConcentration[]
 
-  @@index([concentration_id])
+  @@schema("training_management")
+}
+
+model CompetitionConcentration {
+  competition_id   Int
+  concentration_id Int
+  createdAt        DateTime      @default(now())
+  competition      Competition   @relation(fields: [competition_id], references: [id])
+  concentration    Concentration @relation(fields: [concentration_id], references: [id])
+
+  @@id([competition_id, concentration_id])
   @@schema("training_management")
 }
 

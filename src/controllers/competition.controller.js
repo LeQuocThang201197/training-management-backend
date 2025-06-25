@@ -29,8 +29,12 @@ export const createCompetition = async (req, res) => {
         description,
         note,
         is_confirmed: is_confirmed || false,
-        concentration_id: parseInt(concentration_id),
         created_by: req.user.id,
+        concentrations: {
+          create: {
+            concentration_id: parseInt(concentration_id),
+          },
+        },
       },
       include: {
         creator: {
@@ -39,12 +43,16 @@ export const createCompetition = async (req, res) => {
             name: true,
           },
         },
-        concentration: {
-          select: {
-            id: true,
-            location: true,
-            startDate: true,
-            endDate: true,
+        concentrations: {
+          include: {
+            concentration: {
+              select: {
+                id: true,
+                location: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
           },
         },
       },
@@ -71,7 +79,11 @@ export const getCompetitionsByConcentration = async (req, res) => {
 
     const competitions = await prisma.competition.findMany({
       where: {
-        concentration_id: parseInt(concentrationId),
+        concentrations: {
+          some: {
+            concentration_id: parseInt(concentrationId),
+          },
+        },
       },
       include: {
         creator: {
@@ -80,12 +92,16 @@ export const getCompetitionsByConcentration = async (req, res) => {
             name: true,
           },
         },
-        concentration: {
-          select: {
-            id: true,
-            location: true,
-            startDate: true,
-            endDate: true,
+        concentrations: {
+          include: {
+            concentration: {
+              select: {
+                id: true,
+                location: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
           },
         },
         participants: {
