@@ -167,7 +167,7 @@ export const getConcentrations = async (req, res) => {
             },
           },
         },
-        competitions: {
+        competitionConcentrations: {
           include: {
             competition: {
               include: {
@@ -230,7 +230,7 @@ export const getConcentrations = async (req, res) => {
       });
 
       // Format competitions và tính số lượng người tham gia
-      const formattedCompetitions = concentration.competitions.map(
+      const formattedCompetitions = concentration.competitionConcentrations.map(
         (competitionConcentration) => {
           const competition = competitionConcentration.competition;
           // Tính toán số lượng người tham gia competition theo role type
