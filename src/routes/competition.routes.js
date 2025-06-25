@@ -11,6 +11,7 @@ import {
   updateCompetitionParticipant,
   removeCompetitionParticipant,
   updateCompetitionParticipants,
+  getAllCompetitions,
 } from "../controllers/competition.controller.js";
 
 const router = express.Router();
@@ -56,5 +57,6 @@ router.put(
 
 // Cuối cùng là các route gốc
 router.post("/", checkPermission("CREATE_COMPETITION"), createCompetition);
+router.get("/", checkPermission("READ_COMPETITION"), getAllCompetitions);
 
 export default router;

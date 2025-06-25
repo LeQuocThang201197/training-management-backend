@@ -28,7 +28,7 @@ router.use("/person-roles", personRoleRoutes);
 router.use("/organizations", organizationRoutes);
 router.use("/absences", absenceRoutes);
 router.use("/trainings", trainingRoutes);
-router.use("/competitions", competitionRoutes);
+router.use("/competitions", isAuthenticated, competitionRoutes);
 router.use("/overview", overviewRoutes);
 
 // Protected routes

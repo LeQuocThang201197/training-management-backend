@@ -599,3 +599,53 @@ export const updateCompetitionParticipants = async (req, res) => {
     });
   }
 };
+
+// Lấy danh sách tất cả giải đấu
+export const getAllCompetitions = async (req, res) => {
+  try {
+    const competitions = await prisma.competition.findMany({
+      include: {
+        creator: {
+          select: { id: true, name: true },
+        },
+        concentrations: {
+          include: {
+            concentration: {
+              select: {
+                id: true,
+                location: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+          },
+        },
+        participants: {
+          include: {
+            participation: {
+              include: {
+                person: true,
+                role: true,
+                organization: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        startDate: "desc",
+      },
+    });
+
+    res.json({
+      success: true,
+      data: competitions,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
