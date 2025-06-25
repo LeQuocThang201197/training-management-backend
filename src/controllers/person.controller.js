@@ -433,6 +433,8 @@ export const updatePerson = async (req, res) => {
         select: {
           id: true,
           name: true,
+          gender: true,
+          birthday: true,
           identity_number: true,
           social_insurance: true,
         },
@@ -442,7 +444,7 @@ export const updatePerson = async (req, res) => {
           success: false,
           message: "Số CCCD/CMND đã tồn tại",
           duplicate_info: {
-            message: `Trùng với nhân sự: ${existingPerson.name} (ID: ${existingPerson.id})`,
+            message: `Trùng với nhân sự: ${existingPerson.name}`,
             person: existingPerson,
           },
         });
@@ -461,6 +463,8 @@ export const updatePerson = async (req, res) => {
         select: {
           id: true,
           name: true,
+          gender: true,
+          birthday: true,
           identity_number: true,
           social_insurance: true,
         },
@@ -470,7 +474,7 @@ export const updatePerson = async (req, res) => {
           success: false,
           message: "Số BHXH đã tồn tại",
           duplicate_info: {
-            message: `Trùng với nhân sự: ${existingPerson.name} (ID: ${existingPerson.id})`,
+            message: `Trùng với nhân sự: ${existingPerson.name}`,
             person: existingPerson,
           },
         });
