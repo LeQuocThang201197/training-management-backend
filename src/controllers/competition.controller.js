@@ -642,6 +642,7 @@ export const getCompetitions = async (req, res) => {
       is_confirmed,
       startDate,
       endDate,
+      status,
     } = req.query;
 
     // Build where condition
@@ -660,6 +661,24 @@ export const getCompetitions = async (req, res) => {
       ...(startDate && { startDate: { gte: new Date(startDate) } }),
       ...(endDate && { endDate: { lte: new Date(endDate) } }),
     };
+
+    // Filter theo trạng thái
+    if (status) {
+      const now = new Date();
+      const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(now.setHours(23, 59, 59, 999));
+
+      if (status === "upcoming") {
+        whereCondition.startDate = { gt: endOfDay };
+      } else if (status === "ongoing") {
+        whereCondition.AND = [
+          { startDate: { lte: endOfDay } },
+          { endDate: { gte: startOfDay } },
+        ];
+      } else if (status === "completed") {
+        whereCondition.endDate = { lt: startOfDay };
+      }
+    }
 
     // Count total
     const total = await prisma.competition.count({ where: whereCondition });
