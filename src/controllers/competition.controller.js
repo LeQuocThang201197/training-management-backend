@@ -605,7 +605,7 @@ export const getCompetitions = async (req, res) => {
   try {
     const {
       page = 1,
-      limit = 10,
+      limit = 9,
       search = "",
       sortBy = "startDate",
       sortOrder = "desc",
@@ -708,6 +708,64 @@ export const getCompetitions = async (req, res) => {
         limit: parseInt(limit),
         total,
         totalPages: Math.ceil(total / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Lấy thống kê tổng quan về giải đấu
+export const getCompetitionStats = async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(now.setHours(23, 59, 59, 999));
+
+    // Lấy tổng số giải đấu
+    const total = await prisma.competition.count();
+
+    // Lấy giải đấu sắp diễn ra (chưa bắt đầu)
+    const upcoming = await prisma.competition.count({
+      where: {
+        startDate: {
+          gt: endOfDay,
+        },
+      },
+    });
+
+    // Lấy giải đấu đang diễn ra
+    const ongoing = await prisma.competition.count({
+      where: {
+        startDate: {
+          lte: endOfDay,
+        },
+        endDate: {
+          gte: startOfDay,
+        },
+      },
+    });
+
+    // Lấy giải đấu đã kết thúc
+    const completed = await prisma.competition.count({
+      where: {
+        endDate: {
+          lt: startOfDay,
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        upcoming,
+        ongoing,
+        completed,
       },
     });
   } catch (error) {

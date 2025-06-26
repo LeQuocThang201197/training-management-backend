@@ -12,6 +12,7 @@ import {
   removeCompetitionParticipant,
   updateCompetitionParticipants,
   getCompetitions,
+  getCompetitionStats,
 } from "../controllers/competition.controller.js";
 
 const router = express.Router();
@@ -22,6 +23,9 @@ router.get(
   checkPermission("READ_COMPETITION"),
   getCompetitionsByConcentration
 );
+
+// Route thống kê
+router.get("/stats", checkPermission("READ_COMPETITION"), getCompetitionStats);
 
 // Sau đó đến các route có pattern với :id
 router.post(
