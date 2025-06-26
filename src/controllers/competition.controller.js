@@ -600,10 +600,44 @@ export const updateCompetitionParticipants = async (req, res) => {
   }
 };
 
-// Lấy danh sách tất cả giải đấu
-export const getAllCompetitions = async (req, res) => {
+// Lấy danh sách giải đấu với pagination, sort, filter, search
+export const getCompetitions = async (req, res) => {
   try {
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      sortBy = "startDate",
+      sortOrder = "desc",
+      isForeign,
+      is_confirmed,
+      startDate,
+      endDate,
+    } = req.query;
+
+    // Build where condition
+    const whereCondition = {
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { location: { contains: search, mode: "insensitive" } },
+          { note: { contains: search, mode: "insensitive" } },
+        ],
+      }),
+      ...(isForeign !== undefined && { isForeign: isForeign === "true" }),
+      ...(is_confirmed !== undefined && {
+        is_confirmed: is_confirmed === "true",
+      }),
+      ...(startDate && { startDate: { gte: new Date(startDate) } }),
+      ...(endDate && { endDate: { lte: new Date(endDate) } }),
+    };
+
+    // Count total
+    const total = await prisma.competition.count({ where: whereCondition });
+
+    // Get competitions with pagination
     const competitions = await prisma.competition.findMany({
+      where: whereCondition,
       include: {
         creator: {
           select: { id: true, name: true },
@@ -616,30 +650,44 @@ export const getAllCompetitions = async (req, res) => {
                 location: true,
                 startDate: true,
                 endDate: true,
+                team: {
+                  select: {
+                    sport: { select: { name: true } },
+                    type: true,
+                    gender: true,
+                  },
+                },
               },
             },
           },
         },
-        participants: {
-          include: {
-            participation: {
-              include: {
-                person: true,
-                role: true,
-                organization: true,
-              },
-            },
-          },
+        _count: {
+          select: { participants: true },
         },
       },
       orderBy: {
-        startDate: "desc",
+        [sortBy]: sortOrder,
       },
+      skip: (parseInt(page) - 1) * parseInt(limit),
+      take: parseInt(limit),
     });
+
+    // Format response
+    const formattedCompetitions = competitions.map((comp) => ({
+      ...comp,
+      totalParticipants: comp._count.participants,
+      _count: undefined, // Remove _count from response
+    }));
 
     res.json({
       success: true,
-      data: competitions,
+      data: formattedCompetitions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     res.status(500).json({
