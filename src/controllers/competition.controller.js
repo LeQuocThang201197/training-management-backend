@@ -725,8 +725,9 @@ export const getCompetitions = async (req, res) => {
         concentration: {
           ...cc.concentration,
           team: {
-            ...cc.concentration.team,
-            displayName: formatTeamInfo(cc.concentration.team),
+            sport: cc.concentration.team.sport,
+            type: formatTeamType(cc.concentration.team.type),
+            gender: formatTeamGender(cc.concentration.team.gender),
           },
         },
       }));
