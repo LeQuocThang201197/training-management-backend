@@ -661,8 +661,14 @@ export const getCompetitions = async (req, res) => {
             },
           },
         },
-        _count: {
-          select: { participants: true },
+        participants: {
+          include: {
+            participation: {
+              include: {
+                role: true,
+              },
+            },
+          },
         },
       },
       orderBy: {
@@ -673,11 +679,26 @@ export const getCompetitions = async (req, res) => {
     });
 
     // Format response
-    const formattedCompetitions = competitions.map((comp) => ({
-      ...comp,
-      totalParticipants: comp._count.participants,
-      _count: undefined, // Remove _count from response
-    }));
+    const formattedCompetitions = competitions.map((comp) => {
+      // Tính toán số lượng người tham gia competition theo role type
+      const participantStats = comp.participants.reduce(
+        (acc, participant) => {
+          const roleType = participant.participation.role.type;
+          acc[roleType] = (acc[roleType] || 0) + 1;
+          return acc;
+        },
+        { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+      );
+
+      // Loại bỏ thông tin chi tiết participants
+      const { participants, ...competitionInfo } = comp;
+
+      return {
+        ...competitionInfo,
+        participantStats,
+        totalParticipants: comp.participants.length,
+      };
+    });
 
     res.json({
       success: true,
