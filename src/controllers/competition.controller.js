@@ -4,6 +4,35 @@ const formatGender = (gender) => {
   return gender ? "Nam" : "Nữ";
 };
 
+const formatTeamType = (type) => {
+  const typeMap = {
+    JUNIOR: "Trẻ",
+    ADULT: "Tuyển",
+    DISABILITY: "Khuyết tật",
+  };
+  return typeMap[type] || type;
+};
+
+const formatTeamGender = (gender) => {
+  const genderMap = {
+    MALE: "Nam",
+    FEMALE: "Nữ",
+    MIXED: "Nam và Nữ",
+  };
+  return genderMap[gender] || gender;
+};
+
+const formatTeamInfo = (team) => {
+  const sportName = team.sport?.name || "";
+  const teamType = formatTeamType(team.type);
+  const teamGender = formatTeamGender(team.gender);
+
+  // Nếu là MIXED thì không hiển thị giới tính
+  const genderDisplay = team.gender === "MIXED" ? "" : ` ${teamGender}`;
+
+  return `${sportName} ${teamType}${genderDisplay}`.trim();
+};
+
 // Tạo giải đấu mới
 export const createCompetition = async (req, res) => {
   try {
@@ -690,11 +719,24 @@ export const getCompetitions = async (req, res) => {
         { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
       );
 
+      // Format concentrations với thông tin team
+      const formattedConcentrations = comp.concentrations.map((cc) => ({
+        ...cc,
+        concentration: {
+          ...cc.concentration,
+          team: {
+            ...cc.concentration.team,
+            displayName: formatTeamInfo(cc.concentration.team),
+          },
+        },
+      }));
+
       // Loại bỏ thông tin chi tiết participants
       const { participants, ...competitionInfo } = comp;
 
       return {
         ...competitionInfo,
+        concentrations: formattedConcentrations,
         participantStats,
         totalParticipants: comp.participants.length,
       };
