@@ -643,6 +643,7 @@ export const getCompetitions = async (req, res) => {
       startDate,
       endDate,
       status,
+      sportId,
     } = req.query;
 
     // Build where condition
@@ -660,6 +661,17 @@ export const getCompetitions = async (req, res) => {
       }),
       ...(startDate && { startDate: { gte: new Date(startDate) } }),
       ...(endDate && { endDate: { lte: new Date(endDate) } }),
+      ...(sportId && {
+        concentrations: {
+          some: {
+            concentration: {
+              team: {
+                sportId: parseInt(sportId),
+              },
+            },
+          },
+        },
+      }),
     };
 
     // Filter theo trạng thái
@@ -668,15 +680,28 @@ export const getCompetitions = async (req, res) => {
       const startOfDay = new Date(now.setHours(0, 0, 0, 0));
       const endOfDay = new Date(now.setHours(23, 59, 59, 999));
 
-      if (status === "upcoming") {
-        whereCondition.startDate = { gt: endOfDay };
-      } else if (status === "ongoing") {
-        whereCondition.AND = [
-          { startDate: { lte: endOfDay } },
-          { endDate: { gte: startOfDay } },
-        ];
-      } else if (status === "completed") {
-        whereCondition.endDate = { lt: startOfDay };
+      // Hỗ trợ multiple status (upcoming,ongoing,completed)
+      const statusArray = status.split(",");
+      const statusConditions = [];
+
+      statusArray.forEach((s) => {
+        const trimmedStatus = s.trim();
+        if (trimmedStatus === "upcoming") {
+          statusConditions.push({ startDate: { gt: endOfDay } });
+        } else if (trimmedStatus === "ongoing") {
+          statusConditions.push({
+            AND: [
+              { startDate: { lte: endOfDay } },
+              { endDate: { gte: startOfDay } },
+            ],
+          });
+        } else if (trimmedStatus === "completed") {
+          statusConditions.push({ endDate: { lt: startOfDay } });
+        }
+      });
+
+      if (statusConditions.length > 0) {
+        whereCondition.OR = statusConditions;
       }
     }
 
