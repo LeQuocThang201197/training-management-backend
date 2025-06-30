@@ -178,8 +178,8 @@ export const getCompetitionsByConcentration = async (req, res) => {
   }
 };
 
-// Lấy chi tiết một giải đấu
-export const getCompetitionDetail = async (req, res) => {
+// Lấy chi tiết một giải đấu theo ID
+export const getCompetitionById = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -194,6 +194,26 @@ export const getCompetitionDetail = async (req, res) => {
             name: true,
           },
         },
+        concentrations: {
+          include: {
+            concentration: {
+              select: {
+                id: true,
+                location: true,
+                startDate: true,
+                endDate: true,
+                team: {
+                  select: {
+                    id: true,
+                    sport: { select: { id: true, name: true } },
+                    type: true,
+                    gender: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -204,9 +224,25 @@ export const getCompetitionDetail = async (req, res) => {
       });
     }
 
+    // Format thông tin concentrations với team info
+    const formattedCompetition = {
+      ...competition,
+      concentrations: competition.concentrations.map((cc) => ({
+        ...cc,
+        concentration: {
+          ...cc.concentration,
+          team: {
+            ...cc.concentration.team,
+            type: formatTeamType(cc.concentration.team.type),
+            gender: formatTeamGender(cc.concentration.team.gender),
+          },
+        },
+      })),
+    };
+
     res.json({
       success: true,
-      data: competition,
+      data: formattedCompetition,
     });
   } catch (error) {
     res.status(500).json({

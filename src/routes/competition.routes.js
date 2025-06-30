@@ -3,7 +3,7 @@ import { checkPermission } from "../middlewares/auth.middleware.js";
 import {
   createCompetition,
   getCompetitionsByConcentration,
-  getCompetitionDetail,
+  getCompetitionById,
   getCompetitionParticipants,
   updateCompetition,
   deleteCompetition,
@@ -38,7 +38,7 @@ router.get(
   checkPermission("READ_COMPETITION"),
   getCompetitionParticipants
 );
-router.get("/:id", checkPermission("READ_COMPETITION"), getCompetitionDetail);
+router.get("/:id", checkPermission("READ_COMPETITION"), getCompetitionById);
 router.put("/:id", checkPermission("UPDATE_COMPETITION"), updateCompetition);
 router.delete("/:id", checkPermission("DELETE_COMPETITION"), deleteCompetition);
 router.put(
