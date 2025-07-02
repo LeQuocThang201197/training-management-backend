@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { MANAGEMENT_ROOMS } from "../constants/index.js";
 
 const formatGender = (gender) => {
   return gender ? "Nam" : "Nữ";
@@ -31,6 +32,13 @@ const formatTeamInfo = (team) => {
   const genderDisplay = team.gender === "MIXED" ? "" : ` ${teamGender}`;
 
   return `${sportName} ${teamType}${genderDisplay}`.trim();
+};
+
+// Helper function để lấy thời điểm đầu ngày hiện tại
+const getStartOfDay = () => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
 };
 
 // Tạo giải đấu mới
@@ -202,12 +210,65 @@ export const getCompetitionById = async (req, res) => {
                 location: true,
                 startDate: true,
                 endDate: true,
+                room: true,
+                related_year: true,
+                sequence_number: true,
+                note: true,
                 team: {
-                  select: {
-                    id: true,
-                    sport: { select: { id: true, name: true } },
-                    type: true,
-                    gender: true,
+                  include: {
+                    sport: true,
+                  },
+                },
+                participants: {
+                  include: {
+                    role: true,
+                    absences: {
+                      where: {
+                        type: "INACTIVE",
+                        AND: [
+                          {
+                            startDate: {
+                              lte: getStartOfDay(),
+                            },
+                          },
+                          {
+                            endDate: {
+                              gte: getStartOfDay(),
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
+                },
+                trainings: {
+                  include: {
+                    participants: {
+                      include: {
+                        participation: {
+                          include: {
+                            role: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                competitionConcentrations: {
+                  include: {
+                    competition: {
+                      include: {
+                        participants: {
+                          include: {
+                            participation: {
+                              include: {
+                                role: true,
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
                   },
                 },
               },
@@ -224,20 +285,90 @@ export const getCompetitionById = async (req, res) => {
       });
     }
 
-    // Format thông tin concentrations với team info
-    const formattedCompetition = {
-      ...competition,
-      concentrations: competition.concentrations.map((cc) => ({
+    // Format concentrations với đầy đủ thông tin giống getConcentrations
+    const formattedConcentrations = competition.concentrations.map((cc) => {
+      const concentration = cc.concentration;
+
+      // Tính toán số lượng người tham gia concentration theo role type
+      const participantStats = concentration.participants.reduce(
+        (acc, participant) => {
+          // Nếu người này đang INACTIVE thì không tính
+          if (participant.absences.length > 0) {
+            return acc;
+          }
+
+          const roleType = participant.role.type;
+          acc[roleType] = (acc[roleType] || 0) + 1;
+          return acc;
+        },
+        { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+      );
+
+      // Format trainings và tính số lượng người tham gia
+      const formattedTrainings = concentration.trainings.map((training) => {
+        // Tính toán số lượng người tham gia training theo role type
+        const trainingStats = training.participants.reduce(
+          (acc, participant) => {
+            const roleType = participant.participation.role.type;
+            acc[roleType] = (acc[roleType] || 0) + 1;
+            return acc;
+          },
+          { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+        );
+
+        // Loại bỏ thông tin chi tiết participants
+        const { participants, ...trainingInfo } = training;
+
+        return {
+          ...trainingInfo,
+          participantStats: trainingStats,
+          totalParticipants: training.participants.length,
+        };
+      });
+
+      // Format competitions và tính số lượng người tham gia
+      const formattedCompetitions = concentration.competitionConcentrations.map(
+        (competitionConcentration) => {
+          const comp = competitionConcentration.competition;
+          // Tính toán số lượng người tham gia competition theo role type
+          const competitionStats = comp.participants.reduce(
+            (acc, participant) => {
+              const roleType = participant.participation.role.type;
+              acc[roleType] = (acc[roleType] || 0) + 1;
+              return acc;
+            },
+            { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+          );
+
+          // Loại bỏ thông tin chi tiết participants
+          const { participants, ...competitionInfo } = comp;
+
+          return {
+            ...competitionInfo,
+            participantStats: competitionStats,
+            totalParticipants: comp.participants.length,
+          };
+        }
+      );
+
+      return {
         ...cc,
         concentration: {
-          ...cc.concentration,
-          team: {
-            ...cc.concentration.team,
-            type: formatTeamType(cc.concentration.team.type),
-            gender: formatTeamGender(cc.concentration.team.gender),
-          },
+          ...concentration,
+          team: formatTeamInfo(concentration.team),
+          room: MANAGEMENT_ROOMS[concentration.room],
+          participantStats,
+          trainings: formattedTrainings,
+          competitions: formattedCompetitions,
+          participants: undefined, // Không trả về danh sách chi tiết người tham gia
+          competitionConcentrations: undefined, // Loại bỏ raw data của bảng trung gian
         },
-      })),
+      };
+    });
+
+    const formattedCompetition = {
+      ...competition,
+      concentrations: formattedConcentrations,
     };
 
     res.json({
