@@ -191,6 +191,17 @@ export const getCompetitionById = async (req, res) => {
             name: true,
           },
         },
+        participants: {
+          include: {
+            participation: {
+              include: {
+                person: true,
+                role: true,
+                organization: true,
+              },
+            },
+          },
+        },
         concentrations: {
           include: {
             concentration: {
@@ -355,9 +366,34 @@ export const getCompetitionById = async (req, res) => {
       };
     });
 
+    // Tính toán số lượng người tham gia competition theo role type
+    const participantStats = competition.participants.reduce(
+      (acc, participant) => {
+        const roleType = participant.participation.role.type;
+        acc[roleType] = (acc[roleType] || 0) + 1;
+        return acc;
+      },
+      { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
+    );
+
+    // Format participants với gender
+    const formattedParticipants = competition.participants.map((p) => ({
+      ...p,
+      participation: {
+        ...p.participation,
+        person: {
+          ...p.participation.person,
+          gender: formatGender(p.participation.person.gender),
+        },
+      },
+    }));
+
     const formattedCompetition = {
       ...competition,
       concentrations: formattedConcentrations,
+      participantStats,
+      totalParticipants: competition.participants.length,
+      participants: undefined, // Không trả về danh sách chi tiết người tham gia
     };
 
     res.json({
