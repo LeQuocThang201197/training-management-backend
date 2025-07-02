@@ -1,5 +1,5 @@
 import { prisma } from "../config/prisma.js";
-import { MANAGEMENT_ROOMS } from "../constants/index.js";
+import { formatTeamInfo, MANAGEMENT_ROOMS } from "../constants/index.js";
 
 const formatGender = (gender) => {
   return gender ? "Nam" : "Nữ";
@@ -21,17 +21,6 @@ const formatTeamGender = (gender) => {
     MIXED: "Nam và Nữ",
   };
   return genderMap[gender] || gender;
-};
-
-const formatTeamInfo = (team) => {
-  const sportName = team.sport?.name || "";
-  const teamType = formatTeamType(team.type);
-  const teamGender = formatTeamGender(team.gender);
-
-  // Nếu là MIXED thì không hiển thị giới tính
-  const genderDisplay = team.gender === "MIXED" ? "" : ` ${teamGender}`;
-
-  return `${sportName} ${teamType}${genderDisplay}`.trim();
 };
 
 // Helper function để lấy thời điểm đầu ngày hiện tại
