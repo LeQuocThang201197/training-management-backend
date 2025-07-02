@@ -262,6 +262,7 @@ export const getConcentrations = async (req, res) => {
         trainings: formattedTrainings,
         competitions: formattedCompetitions,
         participants: undefined, // Không trả về danh sách chi tiết người tham gia
+        competitionConcentrations: undefined, // Loại bỏ raw data của bảng trung gian
       };
     });
 
