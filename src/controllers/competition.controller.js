@@ -365,8 +365,36 @@ export const updateCompetition = async (req, res) => {
 export const deleteCompetition = async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.competition.delete({
-      where: { id: parseInt(id) },
+    const competitionId = parseInt(id);
+
+    // Kiểm tra competition tồn tại
+    const competition = await prisma.competition.findUnique({
+      where: { id: competitionId },
+    });
+
+    if (!competition) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy giải đấu",
+      });
+    }
+
+    // Xóa theo thứ tự: participants -> concentrations -> competition
+    await prisma.$transaction(async (tx) => {
+      // 1. Xóa tất cả người tham gia competition
+      await tx.competitionParticipant.deleteMany({
+        where: { competition_id: competitionId },
+      });
+
+      // 2. Xóa tất cả liên kết với concentrations
+      await tx.competitionConcentration.deleteMany({
+        where: { competition_id: competitionId },
+      });
+
+      // 3. Xóa competition chính
+      await tx.competition.delete({
+        where: { id: competitionId },
+      });
     });
 
     res.json({
