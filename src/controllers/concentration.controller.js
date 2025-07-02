@@ -523,10 +523,11 @@ export const updateConcentration = async (req, res) => {
 export const deleteConcentration = async (req, res) => {
   try {
     const { id } = req.params;
+    const concentrationId = parseInt(id);
 
     // Kiểm tra quyền (chỉ người tạo mới được xóa)
     const concentration = await prisma.concentration.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: concentrationId },
     });
 
     if (!concentration) {
@@ -543,14 +544,59 @@ export const deleteConcentration = async (req, res) => {
       });
     }
 
-    // Xóa tất cả các đợt tập huấn liên quan trước
-    await prisma.training.deleteMany({
-      where: { concentration_id: parseInt(id) },
-    });
+    // Xóa tất cả dữ liệu liên quan theo thứ tự đúng
+    await prisma.$transaction(async (tx) => {
+      // 1. Xóa AbsenceRecord của các participants trong concentration này
+      await tx.absenceRecord.deleteMany({
+        where: {
+          participation: {
+            concentration_id: concentrationId,
+          },
+        },
+      });
 
-    // Sau đó xóa đợt tập trung
-    await prisma.concentration.delete({
-      where: { id: parseInt(id) },
+      // 2. Xóa CompetitionParticipant của các participants trong concentration này
+      await tx.competitionParticipant.deleteMany({
+        where: {
+          participation: {
+            concentration_id: concentrationId,
+          },
+        },
+      });
+
+      // 3. Xóa TrainingParticipant của tất cả trainings trong concentration này
+      await tx.trainingParticipant.deleteMany({
+        where: {
+          training: {
+            concentration_id: concentrationId,
+          },
+        },
+      });
+
+      // 4. Xóa tất cả Training trong concentration này
+      await tx.training.deleteMany({
+        where: { concentration_id: concentrationId },
+      });
+
+      // 5. Xóa tất cả PersonOnConcentration (participants)
+      await tx.personOnConcentration.deleteMany({
+        where: { concentration_id: concentrationId },
+      });
+
+      // 6. Xóa tất cả PaperOnConcentration (papers được gắn)
+      await tx.paperOnConcentration.deleteMany({
+        where: { concentration_id: concentrationId },
+      });
+
+      // 7. Xóa tất cả CompetitionConcentration (liên kết với competitions)
+      await tx.competitionConcentration.deleteMany({
+        where: { concentration_id: concentrationId },
+      });
+
+      // 8. Cuối cùng xóa Concentration chính
+      await tx.concentration.delete({
+        where: { id: concentrationId },
+      });
     });
 
     res.json({
