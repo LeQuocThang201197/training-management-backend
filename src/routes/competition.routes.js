@@ -13,6 +13,10 @@ import {
   updateCompetitionParticipants,
   getCompetitions,
   getCompetitionStats,
+  addConcentrationToCompetition,
+  removeConcentrationFromCompetition,
+  getAvailableConcentrations,
+  getAvailableParticipants,
 } from "../controllers/competition.controller.js";
 
 const router = express.Router();
@@ -38,6 +42,29 @@ router.get(
   checkPermission("READ_COMPETITION"),
   getCompetitionParticipants
 );
+router.get(
+  "/:id/available-participants",
+  checkPermission("READ_COMPETITION"),
+  getAvailableParticipants
+);
+
+// Routes quản lý concentrations của competition
+router.post(
+  "/:id/concentrations",
+  checkPermission("UPDATE_COMPETITION"),
+  addConcentrationToCompetition
+);
+router.get(
+  "/:id/available-concentrations",
+  checkPermission("READ_COMPETITION"),
+  getAvailableConcentrations
+);
+router.delete(
+  "/:id/concentrations/:concentrationId",
+  checkPermission("UPDATE_COMPETITION"),
+  removeConcentrationFromCompetition
+);
+
 router.get("/:id", checkPermission("READ_COMPETITION"), getCompetitionById);
 router.put("/:id", checkPermission("UPDATE_COMPETITION"), updateCompetition);
 router.delete("/:id", checkPermission("DELETE_COMPETITION"), deleteCompetition);
