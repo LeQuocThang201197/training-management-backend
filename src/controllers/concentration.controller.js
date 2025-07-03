@@ -173,11 +173,7 @@ export const getConcentrations = async (req, res) => {
               include: {
                 participants: {
                   include: {
-                    participation: {
-                      include: {
-                        role: true,
-                      },
-                    },
+                    role: true,
                   },
                 },
               },
@@ -236,7 +232,7 @@ export const getConcentrations = async (req, res) => {
           // Tính toán số lượng người tham gia competition theo role type
           const competitionStats = competition.participants.reduce(
             (acc, participant) => {
-              const roleType = participant.participation.role.type;
+              const roleType = participant.role.type;
               acc[roleType] = (acc[roleType] || 0) + 1;
               return acc;
             },
