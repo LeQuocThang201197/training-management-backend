@@ -310,20 +310,30 @@ export const getPersonById = async (req, res) => {
                 },
               },
             },
-            // Include only the competitions this person participated in
-            competitionParticipations: {
+          },
+          orderBy: {
+            concentration: {
+              startDate: "desc",
+            },
+          },
+        },
+        // Include competition participations directly from Person model
+        competitionParticipants: {
+          include: {
+            competition: true,
+            role: true,
+            concentration: {
               include: {
-                competition: true,
-              },
-              orderBy: {
-                competition: {
-                  startDate: "desc",
+                team: {
+                  include: {
+                    sport: true,
+                  },
                 },
               },
             },
           },
           orderBy: {
-            concentration: {
+            competition: {
               startDate: "desc",
             },
           },
@@ -372,19 +382,36 @@ export const getPersonById = async (req, res) => {
             isForeign: tp.training.isForeign,
             note: tp.note || null,
           })),
-          // Move competitions inside concentration
-          competitions: p.competitionParticipations.map((cp) => ({
-            id: cp.competition.id,
-            name: cp.competition.name,
-            location: cp.competition.location,
-            startDate: cp.startDate,
-            endDate: cp.endDate,
-            isForeign: cp.competition.isForeign,
-            is_confirmed: cp.competition.is_confirmed,
-            note: cp.note || null,
-          })),
         },
       })),
+      // Add competitions as a separate array
+      competitions: person.competitionParticipants.map((cp) => ({
+        id: cp.competition.id,
+        name: cp.competition.name,
+        location: cp.competition.location,
+        startDate: cp.startDate,
+        endDate: cp.endDate,
+        isForeign: cp.competition.isForeign,
+        is_confirmed: cp.competition.is_confirmed,
+        note: cp.note || null,
+        role: {
+          name: cp.role.name,
+          type: cp.role.type,
+        },
+        concentration: {
+          id: cp.concentration.id,
+          location: cp.concentration.location,
+          startDate: cp.concentration.startDate,
+          endDate: cp.concentration.endDate,
+          team: {
+            sport: cp.concentration.team.sport.name,
+            type: formatTeamType(cp.concentration.team.type),
+            gender: formatTeamGender(cp.concentration.team.gender),
+          },
+        },
+      })),
+      // Remove the competitionParticipants from the response
+      competitionParticipants: undefined,
     };
 
     res.json({
