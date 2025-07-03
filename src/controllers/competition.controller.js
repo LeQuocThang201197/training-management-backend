@@ -132,11 +132,15 @@ export const getCompetitionsByConcentration = async (req, res) => {
         },
         participants: {
           include: {
-            participation: {
+            person: true,
+            role: true,
+            concentration: {
               include: {
-                person: true,
-                role: true,
-                organization: true,
+                team: {
+                  include: {
+                    sport: true,
+                  },
+                },
               },
             },
           },
@@ -152,12 +156,14 @@ export const getCompetitionsByConcentration = async (req, res) => {
       ...comp,
       participants: comp.participants.map((p) => ({
         ...p,
-        participation: {
-          ...p.participation,
-          person: {
-            ...p.participation.person,
-            gender: formatGender(p.participation.person.gender),
-          },
+        person: {
+          ...p.person,
+          gender: formatGender(p.person.gender),
+        },
+        concentration: {
+          ...p.concentration,
+          team: formatTeamInfo(p.concentration.team),
+          room: MANAGEMENT_ROOMS[p.concentration.room],
         },
       })),
     }));
@@ -193,11 +199,15 @@ export const getCompetitionById = async (req, res) => {
         },
         participants: {
           include: {
-            participation: {
+            person: true,
+            role: true,
+            concentration: {
               include: {
-                person: true,
-                role: true,
-                organization: true,
+                team: {
+                  include: {
+                    sport: true,
+                  },
+                },
               },
             },
           },
@@ -260,11 +270,7 @@ export const getCompetitionById = async (req, res) => {
                       include: {
                         participants: {
                           include: {
-                            participation: {
-                              include: {
-                                role: true,
-                              },
-                            },
+                            role: true,
                           },
                         },
                       },
@@ -333,7 +339,7 @@ export const getCompetitionById = async (req, res) => {
           // Tính toán số lượng người tham gia competition theo role type
           const competitionStats = comp.participants.reduce(
             (acc, participant) => {
-              const roleType = participant.participation.role.type;
+              const roleType = participant.role.type;
               acc[roleType] = (acc[roleType] || 0) + 1;
               return acc;
             },
@@ -369,7 +375,7 @@ export const getCompetitionById = async (req, res) => {
     // Tính toán số lượng người tham gia competition theo role type
     const participantStats = competition.participants.reduce(
       (acc, participant) => {
-        const roleType = participant.participation.role.type;
+        const roleType = participant.role.type;
         acc[roleType] = (acc[roleType] || 0) + 1;
         return acc;
       },
@@ -379,12 +385,14 @@ export const getCompetitionById = async (req, res) => {
     // Format participants với gender
     const formattedParticipants = competition.participants.map((p) => ({
       ...p,
-      participation: {
-        ...p.participation,
-        person: {
-          ...p.participation.person,
-          gender: formatGender(p.participation.person.gender),
-        },
+      person: {
+        ...p.person,
+        gender: formatGender(p.person.gender),
+      },
+      concentration: {
+        ...p.concentration,
+        team: formatTeamInfo(p.concentration.team),
+        room: MANAGEMENT_ROOMS[p.concentration.room],
       },
     }));
 
@@ -418,11 +426,21 @@ export const getCompetitionParticipants = async (req, res) => {
         competition_id: parseInt(id),
       },
       include: {
-        participation: {
+        person: true,
+        role: true,
+        concentration: {
           include: {
-            person: true,
-            role: true,
-            organization: true,
+            team: {
+              include: {
+                sport: true,
+              },
+            },
+          },
+        },
+        creator: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
@@ -431,7 +449,7 @@ export const getCompetitionParticipants = async (req, res) => {
     // Tính toán số lượng theo role type
     const participantStats = participants.reduce(
       (acc, participant) => {
-        const roleType = participant.participation.role.type;
+        const roleType = participant.role.type;
         acc[roleType] = (acc[roleType] || 0) + 1;
         return acc;
       },
@@ -441,12 +459,14 @@ export const getCompetitionParticipants = async (req, res) => {
     // Format gender trong response
     const formattedParticipants = participants.map((p) => ({
       ...p,
-      participation: {
-        ...p.participation,
-        person: {
-          ...p.participation.person,
-          gender: formatGender(p.participation.person.gender),
-        },
+      person: {
+        ...p.person,
+        gender: formatGender(p.person.gender),
+      },
+      concentration: {
+        ...p.concentration,
+        team: formatTeamInfo(p.concentration.team),
+        room: MANAGEMENT_ROOMS[p.concentration.room],
       },
     }));
 
@@ -570,23 +590,30 @@ export const deleteCompetition = async (req, res) => {
 export const addParticipantToCompetition = async (req, res) => {
   try {
     const { id } = req.params;
-    const { participation_id, startDate, endDate, note } = req.body;
+    const { person_id, role_id, concentration_id, startDate, endDate, note } =
+      req.body;
 
     const participant = await prisma.competitionParticipant.create({
       data: {
         competition_id: parseInt(id),
-        participation_id: parseInt(participation_id),
+        person_id: parseInt(person_id),
+        role_id: parseInt(role_id),
+        concentration_id: parseInt(concentration_id),
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         note: note || "",
         created_by: req.user.id,
       },
       include: {
-        participation: {
+        person: true,
+        role: true,
+        concentration: {
           include: {
-            person: true,
-            role: true,
-            organization: true,
+            team: {
+              include: {
+                sport: true,
+              },
+            },
           },
         },
         creator: {
@@ -601,12 +628,14 @@ export const addParticipantToCompetition = async (req, res) => {
     // Format gender trong response
     const formattedParticipant = {
       ...participant,
-      participation: {
-        ...participant.participation,
-        person: {
-          ...participant.participation.person,
-          gender: formatGender(participant.participation.person.gender),
-        },
+      person: {
+        ...participant.person,
+        gender: formatGender(participant.person.gender),
+      },
+      concentration: {
+        ...participant.concentration,
+        team: formatTeamInfo(participant.concentration.team),
+        room: MANAGEMENT_ROOMS[participant.concentration.room],
       },
     };
 
@@ -627,13 +656,13 @@ export const addParticipantToCompetition = async (req, res) => {
 // Cập nhật thông tin tham gia giải đấu
 export const updateCompetitionParticipant = async (req, res) => {
   try {
-    const { id, participationId } = req.params;
+    const { id, personId } = req.params;
     const { startDate, endDate, note } = req.body;
 
     const participant = await prisma.competitionParticipant.update({
       where: {
-        participation_id_competition_id: {
-          participation_id: parseInt(participationId),
+        person_id_competition_id: {
+          person_id: parseInt(personId),
           competition_id: parseInt(id),
         },
       },
@@ -643,11 +672,15 @@ export const updateCompetitionParticipant = async (req, res) => {
         note,
       },
       include: {
-        participation: {
+        person: true,
+        role: true,
+        concentration: {
           include: {
-            person: true,
-            role: true,
-            organization: true,
+            team: {
+              include: {
+                sport: true,
+              },
+            },
           },
         },
         creator: {
@@ -662,12 +695,14 @@ export const updateCompetitionParticipant = async (req, res) => {
     // Format gender trong response
     const formattedParticipant = {
       ...participant,
-      participation: {
-        ...participant.participation,
-        person: {
-          ...participant.participation.person,
-          gender: formatGender(participant.participation.person.gender),
-        },
+      person: {
+        ...participant.person,
+        gender: formatGender(participant.person.gender),
+      },
+      concentration: {
+        ...participant.concentration,
+        team: formatTeamInfo(participant.concentration.team),
+        room: MANAGEMENT_ROOMS[participant.concentration.room],
       },
     };
 
@@ -688,12 +723,12 @@ export const updateCompetitionParticipant = async (req, res) => {
 // Xóa người tham gia khỏi giải đấu
 export const removeCompetitionParticipant = async (req, res) => {
   try {
-    const { id, participationId } = req.params;
+    const { id, personId } = req.params;
 
     await prisma.competitionParticipant.delete({
       where: {
-        participation_id_competition_id: {
-          participation_id: parseInt(participationId),
+        person_id_competition_id: {
+          person_id: parseInt(personId),
           competition_id: parseInt(id),
         },
       },
@@ -716,11 +751,12 @@ export const removeCompetitionParticipant = async (req, res) => {
 export const updateCompetitionParticipants = async (req, res) => {
   try {
     const { id } = req.params;
-    const { participationIds, participantDetails } = req.body;
-    // participantDetails là mảng các object: { participation_id, startDate, endDate, note }
+    const { participants, participantDetails } = req.body;
+    // participants là mảng các object: { person_id, role_id, concentration_id }
+    // participantDetails là mảng các object: { person_id, startDate, endDate, note }
 
     // Kiểm tra dữ liệu đầu vào
-    if (!participationIds || !Array.isArray(participationIds)) {
+    if (!participants || !Array.isArray(participants)) {
       return res.status(400).json({
         success: false,
         message: "Danh sách người tham gia không hợp lệ",
@@ -744,18 +780,18 @@ export const updateCompetitionParticipants = async (req, res) => {
       // 1. Xóa những người không còn trong danh sách
       const currentParticipants = await tx.competitionParticipant.findMany({
         where: { competition_id: parseInt(id) },
-        select: { participation_id: true },
+        select: { person_id: true },
       });
 
-      const currentIds = currentParticipants.map((p) => p.participation_id);
-      const newIds = participationIds.map((id) => parseInt(id));
+      const currentIds = currentParticipants.map((p) => p.person_id);
+      const newIds = participants.map((p) => parseInt(p.person_id));
       const idsToRemove = currentIds.filter((id) => !newIds.includes(id));
 
       if (idsToRemove.length > 0) {
         await tx.competitionParticipant.deleteMany({
           where: {
             competition_id: parseInt(id),
-            participation_id: { in: idsToRemove },
+            person_id: { in: idsToRemove },
           },
         });
       }
@@ -763,10 +799,15 @@ export const updateCompetitionParticipants = async (req, res) => {
       // 2. Thêm những người mới
       const idsToAdd = newIds.filter((id) => !currentIds.includes(id));
       if (idsToAdd.length > 0) {
+        const participantsToAdd = participants.filter((p) =>
+          idsToAdd.includes(parseInt(p.person_id))
+        );
         await tx.competitionParticipant.createMany({
-          data: idsToAdd.map((participation_id) => ({
+          data: participantsToAdd.map((participant) => ({
             competition_id: parseInt(id),
-            participation_id,
+            person_id: parseInt(participant.person_id),
+            role_id: parseInt(participant.role_id),
+            concentration_id: parseInt(participant.concentration_id),
             startDate: competition.startDate, // Mặc định là ngày bắt đầu của giải
             endDate: competition.endDate, // Mặc định là ngày kết thúc của giải
             created_by: req.user.id,
@@ -779,8 +820,8 @@ export const updateCompetitionParticipants = async (req, res) => {
         for (const detail of participantDetails) {
           await tx.competitionParticipant.update({
             where: {
-              participation_id_competition_id: {
-                participation_id: parseInt(detail.participation_id),
+              person_id_competition_id: {
+                person_id: parseInt(detail.person_id),
                 competition_id: parseInt(id),
               },
             },
@@ -800,11 +841,15 @@ export const updateCompetitionParticipants = async (req, res) => {
         competition_id: parseInt(id),
       },
       include: {
-        participation: {
+        person: true,
+        role: true,
+        concentration: {
           include: {
-            person: true,
-            role: true,
-            organization: true,
+            team: {
+              include: {
+                sport: true,
+              },
+            },
           },
         },
         creator: {
@@ -815,10 +860,8 @@ export const updateCompetitionParticipants = async (req, res) => {
         },
       },
       orderBy: {
-        participation: {
-          person: {
-            name: "asc",
-          },
+        person: {
+          name: "asc",
         },
       },
     });
@@ -826,12 +869,14 @@ export const updateCompetitionParticipants = async (req, res) => {
     // Format response
     const formattedParticipants = updatedParticipants.map((p) => ({
       ...p,
-      participation: {
-        ...p.participation,
-        person: {
-          ...p.participation.person,
-          gender: formatGender(p.participation.person.gender),
-        },
+      person: {
+        ...p.person,
+        gender: formatGender(p.person.gender),
+      },
+      concentration: {
+        ...p.concentration,
+        team: formatTeamInfo(p.concentration.team),
+        room: MANAGEMENT_ROOMS[p.concentration.room],
       },
     }));
 
@@ -956,11 +1001,7 @@ export const getCompetitions = async (req, res) => {
         },
         participants: {
           include: {
-            participation: {
-              include: {
-                role: true,
-              },
-            },
+            role: true,
           },
         },
       },
@@ -976,7 +1017,7 @@ export const getCompetitions = async (req, res) => {
       // Tính toán số lượng người tham gia competition theo role type
       const participantStats = comp.participants.reduce(
         (acc, participant) => {
-          const roleType = participant.participation.role.type;
+          const roleType = participant.role.type;
           acc[roleType] = (acc[roleType] || 0) + 1;
           return acc;
         },
@@ -1371,19 +1412,17 @@ export const getAvailableParticipants = async (req, res) => {
         competition_id: parseInt(id),
       },
       select: {
-        participation_id: true,
+        person_id: true,
       },
     });
 
-    const existingParticipationIds = existingParticipants.map(
-      (p) => p.participation_id
-    );
+    const existingPersonIds = existingParticipants.map((p) => p.person_id);
 
     // Build where condition cho search
     const whereCondition = {
       concentration_id: { in: concentrationIds },
       NOT: {
-        id: { in: existingParticipationIds },
+        person_id: { in: existingPersonIds },
       },
       ...(roleType && {
         role: {
