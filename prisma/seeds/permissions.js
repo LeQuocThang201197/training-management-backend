@@ -84,6 +84,12 @@ export const permissions = [
     name: "READ_OVERVIEW",
     description: "View overview statistics and dashboard",
   },
+
+  // Achievement permissions
+  { name: "CREATE_ACHIEVEMENT", description: "Tạo thành tích mới" },
+  { name: "READ_ACHIEVEMENT", description: "Xem thông tin thành tích" },
+  { name: "UPDATE_ACHIEVEMENT", description: "Cập nhật thông tin thành tích" },
+  { name: "DELETE_ACHIEVEMENT", description: "Xóa thành tích" },
 ];
 
 export const ALL_PERMISSIONS = permissions.map((p) => p.name);

@@ -41,6 +41,7 @@ model User {
   assigned_participants            PersonOnConcentration[]  @relation("assigner")
   created_trainings                Training[]               @relation("creator")
   created_training_participants    TrainingParticipant[]    @relation("creator")
+  created_achievements             Achievement[]            @relation("creator")
 
   @@map("users")
   @@schema("auth")
@@ -198,6 +199,7 @@ model Person {
   creator          User                    @relation("creator", fields: [created_by], references: [id])
   participations   PersonOnConcentration[]
   competitionParticipants CompetitionParticipant[]
+  achievements     Achievement[]
 
   @@index([name_search])
   @@schema("training_management")
@@ -270,6 +272,7 @@ model Competition {
   creator          User                     @relation("creator", fields: [created_by], references: [id])
   participants     CompetitionParticipant[]
   concentrations   CompetitionConcentration[]
+  achievements     Achievement[]
 
   @@schema("training_management")
 }
@@ -303,6 +306,39 @@ model CompetitionParticipant {
   concentration    Concentration         @relation(fields: [concentration_id], references: [id])
 
   @@id([person_id, competition_id])
+  @@schema("training_management")
+}
+
+model Achievement {
+  id             Int      @id @default(autoincrement())
+  person_id      Int
+  competition_id Int
+  
+  // Thông tin nội dung thi đấu
+  event_name     String   // "Chạy 100m", "Chạy 200m", "Nhảy cao"
+  event_category String?  // "Sprint", "Jump", "Throw" (optional)
+  
+  // Thành tích cụ thể
+  result_value   String   // "11.8", "24.18", "1.85"
+  result_unit    String   // "giây", "mét", "kg", "điểm"
+  
+  // Huy chương/Thứ hạng
+  medal_type     String?  // "HCV", "HCB", "HCD"
+  rank           Int?     // 1, 2, 3, 4...
+  
+  // Thông tin bổ sung
+  note           String?
+  is_record      Boolean  @default(false) // Có phải kỷ lục không
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  created_by     Int
+  
+  // Relations
+  person         Person      @relation(fields: [person_id], references: [id])
+  competition    Competition @relation(fields: [competition_id], references: [id])
+  creator        User        @relation("creator", fields: [created_by], references: [id])
+
   @@schema("training_management")
 }
 

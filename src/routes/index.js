@@ -11,6 +11,7 @@ import organizationRoutes from "./organization.routes.js";
 import absenceRoutes from "./absence.routes.js";
 import trainingRoutes from "./training.routes.js";
 import competitionRoutes from "./competition.routes.js";
+import achievementRoutes from "./achievement.routes.js";
 import overviewRoutes from "./overview.routes.js";
 import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
@@ -29,6 +30,7 @@ router.use("/organizations", organizationRoutes);
 router.use("/absences", absenceRoutes);
 router.use("/trainings", trainingRoutes);
 router.use("/competitions", isAuthenticated, competitionRoutes);
+router.use("/achievements", isAuthenticated, achievementRoutes);
 router.use("/overview", overviewRoutes);
 
 // Protected routes

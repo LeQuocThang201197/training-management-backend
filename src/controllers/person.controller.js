@@ -338,6 +338,29 @@ export const getPersonById = async (req, res) => {
             },
           },
         },
+        // Include achievements
+        achievements: {
+          include: {
+            competition: {
+              select: {
+                id: true,
+                name: true,
+                location: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+            creator: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
     });
 
@@ -409,6 +432,22 @@ export const getPersonById = async (req, res) => {
             gender: formatTeamGender(cp.concentration.team.gender),
           },
         },
+      })),
+      // Add achievements as a separate array
+      achievements: person.achievements.map((achievement) => ({
+        id: achievement.id,
+        event_name: achievement.event_name,
+        event_category: achievement.event_category,
+        result_value: achievement.result_value,
+        result_unit: achievement.result_unit,
+        medal_type: achievement.medal_type,
+        rank: achievement.rank,
+        is_record: achievement.is_record,
+        note: achievement.note,
+        createdAt: achievement.createdAt,
+        updatedAt: achievement.updatedAt,
+        competition: achievement.competition,
+        creator: achievement.creator,
       })),
       // Remove the competitionParticipants from the response
       competitionParticipants: undefined,
