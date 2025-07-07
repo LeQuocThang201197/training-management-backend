@@ -116,10 +116,174 @@ export const createConcentration = async (req, res) => {
   }
 };
 
-// Lấy danh sách đợt tập trung
+// Lấy danh sách đợt tập trung với search, filter, sort, pagination
 export const getConcentrations = async (req, res) => {
   try {
+    const {
+      // Pagination
+      page = 1,
+      limit = 20,
+
+      // Sorting
+      sortBy = "startDate",
+      sortOrder = "desc",
+
+      // Filter
+      sportId, // Filter theo môn thể thao
+      teamType, // Loại đội (JUNIOR, ADULT, DISABILITY)
+      status, // Trạng thái: upcoming, active, completed
+      year, // Năm của đợt tập trung
+    } = req.query;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Đặt về đầu ngày
+
+    // Helper function to parse comma-separated values
+    const parseMultipleValues = (value) => {
+      if (!value) return null;
+      const values = value
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v);
+      return values.length === 1 ? values[0] : values;
+    };
+
+    // Parse multiple values for filters
+    const sportIds = parseMultipleValues(sportId);
+    const teamTypes = parseMultipleValues(teamType);
+    const statuses = parseMultipleValues(status);
+    const years = parseMultipleValues(year);
+
+    // Build team filter conditions
+    const teamFilters = {};
+    if (sportIds) {
+      if (Array.isArray(sportIds)) {
+        teamFilters.sport_id = { in: sportIds.map((id) => parseInt(id)) };
+      } else {
+        teamFilters.sport_id = parseInt(sportIds);
+      }
+    }
+    if (teamTypes) {
+      if (Array.isArray(teamTypes)) {
+        teamFilters.type = { in: teamTypes };
+      } else {
+        teamFilters.type = teamTypes;
+      }
+    }
+
+    // Build where condition
+    const whereCondition = {
+      // Filter theo team properties (combine all team filters)
+      ...(Object.keys(teamFilters).length > 0 && {
+        team: teamFilters,
+      }),
+
+      // Filter theo năm
+      ...(years && {
+        related_year: Array.isArray(years)
+          ? { in: years.map((y) => parseInt(y)) }
+          : parseInt(years),
+      }),
+
+      // Filter theo trạng thái
+      ...(statuses && {
+        ...(Array.isArray(statuses)
+          ? {
+              // Multiple statuses - use OR logic
+              OR: statuses
+                .map((s) => {
+                  switch (s) {
+                    case "upcoming":
+                      return {
+                        startDate: {
+                          gt: today, // Chưa bắt đầu
+                        },
+                      };
+                    case "active":
+                      return {
+                        AND: [
+                          {
+                            startDate: {
+                              lte: today, // Đã bắt đầu
+                            },
+                          },
+                          {
+                            endDate: {
+                              gte: today, // Chưa kết thúc
+                            },
+                          },
+                        ],
+                      };
+                    case "completed":
+                      return {
+                        endDate: {
+                          lt: today, // Đã kết thúc
+                        },
+                      };
+                    default:
+                      return {};
+                  }
+                })
+                .filter((condition) => Object.keys(condition).length > 0),
+            }
+          : {
+              // Single status
+              ...(statuses === "upcoming" && {
+                startDate: {
+                  gt: today, // Chưa bắt đầu
+                },
+              }),
+              ...(statuses === "active" && {
+                AND: [
+                  {
+                    startDate: {
+                      lte: today, // Đã bắt đầu
+                    },
+                  },
+                  {
+                    endDate: {
+                      gte: today, // Chưa kết thúc
+                    },
+                  },
+                ],
+              }),
+              ...(statuses === "completed" && {
+                endDate: {
+                  lt: today, // Đã kết thúc
+                },
+              }),
+            }),
+      }),
+    };
+
+    // Build order by
+    const buildOrderBy = (sortBy, sortOrder) => {
+      const order = sortOrder === "asc" ? "asc" : "desc";
+
+      switch (sortBy) {
+        case "startDate":
+          return { startDate: order };
+        case "teamName":
+          return {
+            team: {
+              sport: {
+                name: order,
+              },
+            },
+          };
+        default:
+          return { startDate: "desc" };
+      }
+    };
+
+    // Đếm tổng số đợt tập trung thỏa mãn điều kiện
+    const total = await prisma.concentration.count({
+      where: whereCondition,
+    });
+
+    // Lấy đợt tập trung với phân trang
     const concentrations = await prisma.concentration.findMany({
+      where: whereCondition,
       include: {
         team: {
           include: {
@@ -181,9 +345,9 @@ export const getConcentrations = async (req, res) => {
           },
         },
       },
-      orderBy: {
-        startDate: "desc",
-      },
+      orderBy: buildOrderBy(sortBy, sortOrder),
+      skip: (parseInt(page) - 1) * parseInt(limit),
+      take: parseInt(limit),
     });
 
     // Format response và thêm số lượng người tham gia theo role type
@@ -250,10 +414,24 @@ export const getConcentrations = async (req, res) => {
         }
       );
 
+      // Tính toán trạng thái của đợt tập trung
+      const startDate = new Date(concentration.startDate);
+      const endDate = new Date(concentration.endDate);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+
+      let concentrationStatus = "upcoming";
+      if (today > endDate) {
+        concentrationStatus = "completed";
+      } else if (today >= startDate && today <= endDate) {
+        concentrationStatus = "active";
+      }
+
       return {
         ...concentration,
         team: formatTeamInfo(concentration.team),
         room: MANAGEMENT_ROOMS[concentration.room],
+        status: concentrationStatus,
         participantStats,
         trainings: formattedTrainings,
         competitions: formattedCompetitions,
@@ -265,6 +443,12 @@ export const getConcentrations = async (req, res) => {
     res.json({
       success: true,
       data: formattedConcentrations,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -1195,192 +1379,6 @@ const getStartOfDay = () => {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   return now;
-};
-
-// Tìm kiếm đợt tập trung với nhiều tiêu chí
-export const searchConcentrations = async (req, res) => {
-  try {
-    const {
-      q = "", // Query tìm kiếm (môn thể thao + địa điểm)
-      year, // Năm của đợt tập trung
-      teamType, // Loại đội (JUNIOR, ADULT, DISABILITY)
-      status, // Trạng thái: upcoming, active, completed
-      page = 1,
-      limit = 10,
-    } = req.query;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Đặt về đầu ngày
-
-    // Build where condition cho search
-    const whereCondition = {
-      // Tìm kiếm theo môn thể thao và địa điểm
-      ...(q && {
-        OR: [
-          {
-            team: {
-              sport: {
-                name: {
-                  contains: q,
-                  mode: "insensitive",
-                },
-              },
-            },
-          },
-          {
-            location: {
-              contains: q,
-              mode: "insensitive",
-            },
-          },
-        ],
-      }),
-      // Filter theo năm
-      ...(year && {
-        related_year: parseInt(year),
-      }),
-      // Filter theo loại đội
-      ...(teamType && {
-        team: {
-          type: teamType,
-        },
-      }),
-      // Filter theo trạng thái
-      ...(status && {
-        ...(status === "upcoming" && {
-          startDate: {
-            gt: today, // Chưa bắt đầu
-          },
-        }),
-        ...(status === "active" && {
-          AND: [
-            {
-              startDate: {
-                lte: today, // Đã bắt đầu
-              },
-            },
-            {
-              endDate: {
-                gte: today, // Chưa kết thúc
-              },
-            },
-          ],
-        }),
-        ...(status === "completed" && {
-          endDate: {
-            lt: today, // Đã kết thúc
-          },
-        }),
-      }),
-    };
-
-    // Đếm tổng số đợt tập trung thỏa mãn điều kiện
-    const total = await prisma.concentration.count({
-      where: whereCondition,
-    });
-
-    // Lấy đợt tập trung với phân trang
-    const concentrations = await prisma.concentration.findMany({
-      where: whereCondition,
-      include: {
-        team: {
-          include: {
-            sport: true,
-          },
-        },
-        creator: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        participants: {
-          include: {
-            role: true,
-            absences: {
-              where: {
-                type: "INACTIVE",
-                AND: [
-                  {
-                    startDate: {
-                      lte: getStartOfDay(),
-                    },
-                  },
-                  {
-                    endDate: {
-                      gte: getStartOfDay(),
-                    },
-                  },
-                ],
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        startDate: "desc",
-      },
-      skip: (parseInt(page) - 1) * parseInt(limit),
-      take: parseInt(limit),
-    });
-
-    // Format response và thêm số lượng người tham gia theo role type
-    const formattedConcentrations = concentrations.map((concentration) => {
-      // Tính toán số lượng người tham gia concentration theo role type
-      const participantStats = concentration.participants.reduce(
-        (acc, participant) => {
-          // Nếu người này đang INACTIVE thì không tính
-          if (participant.absences.length > 0) {
-            return acc;
-          }
-
-          const roleType = participant.role.type;
-          acc[roleType] = (acc[roleType] || 0) + 1;
-          return acc;
-        },
-        { ATHLETE: 0, COACH: 0, SPECIALIST: 0, OTHER: 0 }
-      );
-
-      // Tính toán trạng thái của đợt tập trung
-      const startDate = new Date(concentration.startDate);
-      const endDate = new Date(concentration.endDate);
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-
-      let concentrationStatus = "upcoming";
-      if (today > endDate) {
-        concentrationStatus = "completed";
-      } else if (today >= startDate && today <= endDate) {
-        concentrationStatus = "active";
-      }
-
-      return {
-        ...concentration,
-        team: formatTeamInfo(concentration.team),
-        room: MANAGEMENT_ROOMS[concentration.room],
-        status: concentrationStatus,
-        participantStats,
-        participants: undefined, // Không trả về danh sách chi tiết người tham gia
-      };
-    });
-
-    res.json({
-      success: true,
-      data: formattedConcentrations,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        totalPages: Math.ceil(total / parseInt(limit)),
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server",
-      error: error.message,
-    });
-  }
 };
 
 // Thêm function mới
