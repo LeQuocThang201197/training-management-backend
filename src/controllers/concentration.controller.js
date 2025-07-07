@@ -158,9 +158,9 @@ export const getConcentrations = async (req, res) => {
     const teamFilters = {};
     if (sportIds) {
       if (Array.isArray(sportIds)) {
-        teamFilters.sport_id = { in: sportIds.map((id) => parseInt(id)) };
+        teamFilters.sportId = { in: sportIds.map((id) => parseInt(id)) };
       } else {
-        teamFilters.sport_id = parseInt(sportIds);
+        teamFilters.sportId = parseInt(sportIds);
       }
     }
     if (teamTypes) {
