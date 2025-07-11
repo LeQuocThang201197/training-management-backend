@@ -69,12 +69,12 @@ router.get("/:id", checkPermission("READ_COMPETITION"), getCompetitionById);
 router.put("/:id", checkPermission("UPDATE_COMPETITION"), updateCompetition);
 router.delete("/:id", checkPermission("DELETE_COMPETITION"), deleteCompetition);
 router.put(
-  "/:id/participants/:personId",
+  "/:id/participants/:participantId",
   checkPermission("UPDATE_COMPETITION"),
   updateCompetitionParticipant
 );
 router.delete(
-  "/:id/participants/:personId",
+  "/:id/participants/:participantId",
   checkPermission("DELETE_COMPETITION"),
   removeCompetitionParticipant
 );

@@ -646,7 +646,7 @@ export const deletePerson = async (req, res) => {
         if (participation.competitionParticipations.length > 0) {
           await tx.competitionParticipant.deleteMany({
             where: {
-              participation_id: participation.id,
+              participant_id: participation.id,
             },
           });
         }
