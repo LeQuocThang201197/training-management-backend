@@ -13,6 +13,7 @@ import {
   deleteConcentrationNote,
   addParticipantToConcentration,
   getConcentrationParticipants,
+  getParticipantById,
   updateParticipant,
   removeParticipant,
   getAbsencesByConcentration,
@@ -32,6 +33,11 @@ router.get(
   "/:id/participants",
   checkPermission("READ_CONCENTRATION"),
   getConcentrationParticipants
+);
+router.get(
+  "/:id/participants/:participantId",
+  checkPermission("READ_CONCENTRATION"),
+  getParticipantById
 );
 router.put(
   "/:id",

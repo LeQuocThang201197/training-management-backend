@@ -1478,3 +1478,62 @@ export const getAvailablePapers = async (req, res) => {
     });
   }
 };
+
+// Lấy thông tin chi tiết của một người tham gia cụ thể
+export const getParticipantById = async (req, res) => {
+  try {
+    const { id, participantId } = req.params;
+
+    // Kiểm tra concentration tồn tại
+    const concentration = await prisma.concentration.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!concentration) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đợt tập trung",
+      });
+    }
+
+    // Lấy thông tin người tham gia
+    const participant = await prisma.personOnConcentration.findFirst({
+      where: {
+        id: parseInt(participantId),
+        concentration_id: parseInt(id),
+      },
+      include: {
+        person: true,
+        role: true,
+        organization: true,
+      },
+    });
+
+    if (!participant) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy người tham gia này trong đợt tập trung",
+      });
+    }
+
+    // Format response với gender đã được format
+    const formattedParticipant = {
+      ...participant,
+      person: {
+        ...participant.person,
+        gender: formatGender(participant.person.gender),
+      },
+    };
+
+    res.json({
+      success: true,
+      data: formattedParticipant,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
