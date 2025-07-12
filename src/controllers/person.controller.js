@@ -310,30 +310,34 @@ export const getPersonById = async (req, res) => {
                 },
               },
             },
-          },
-          orderBy: {
-            concentration: {
-              startDate: "desc",
-            },
-          },
-        },
-        // Include competition participations directly from Person model
-        competitionParticipants: {
-          include: {
-            competition: true,
-            role: true,
-            concentration: {
+            // Include competition participations through PersonOnConcentration
+            competitionParticipations: {
               include: {
-                team: {
+                competition: true,
+                participation: {
                   include: {
-                    sport: true,
+                    role: true,
+                    concentration: {
+                      include: {
+                        team: {
+                          include: {
+                            sport: true,
+                          },
+                        },
+                      },
+                    },
                   },
+                },
+              },
+              orderBy: {
+                competition: {
+                  startDate: "desc",
                 },
               },
             },
           },
           orderBy: {
-            competition: {
+            concentration: {
               startDate: "desc",
             },
           },
@@ -407,32 +411,36 @@ export const getPersonById = async (req, res) => {
           })),
         },
       })),
-      // Add competitions as a separate array
-      competitions: person.competitionParticipants.map((cp) => ({
-        id: cp.competition.id,
-        name: cp.competition.name,
-        location: cp.competition.location,
-        startDate: cp.startDate,
-        endDate: cp.endDate,
-        isForeign: cp.competition.isForeign,
-        is_confirmed: cp.competition.is_confirmed,
-        note: cp.note || null,
-        role: {
-          name: cp.role.name,
-          type: cp.role.type,
-        },
-        concentration: {
-          id: cp.concentration.id,
-          location: cp.concentration.location,
-          startDate: cp.concentration.startDate,
-          endDate: cp.concentration.endDate,
-          team: {
-            sport: cp.concentration.team.sport.name,
-            type: formatTeamType(cp.concentration.team.type),
-            gender: formatTeamGender(cp.concentration.team.gender),
+      // Add competitions as a separate array - now from competitionParticipations
+      competitions: person.participations.flatMap((p) =>
+        p.competitionParticipations.map((cp) => ({
+          id: cp.competition.id,
+          name: cp.competition.name,
+          location: cp.competition.location,
+          startDate: cp.startDate,
+          endDate: cp.endDate,
+          isForeign: cp.competition.isForeign,
+          is_confirmed: cp.competition.is_confirmed,
+          note: cp.note || null,
+          role: {
+            name: cp.participation.role.name,
+            type: cp.participation.role.type,
           },
-        },
-      })),
+          concentration: {
+            id: cp.participation.concentration.id,
+            location: cp.participation.concentration.location,
+            startDate: cp.participation.concentration.startDate,
+            endDate: cp.participation.concentration.endDate,
+            team: {
+              sport: cp.participation.concentration.team.sport.name,
+              type: formatTeamType(cp.participation.concentration.team.type),
+              gender: formatTeamGender(
+                cp.participation.concentration.team.gender
+              ),
+            },
+          },
+        }))
+      ),
       // Add achievements as a separate array
       achievements: person.achievements.map((achievement) => ({
         id: achievement.id,
@@ -449,8 +457,6 @@ export const getPersonById = async (req, res) => {
         competition: achievement.competition,
         creator: achievement.creator,
       })),
-      // Remove the competitionParticipants from the response
-      competitionParticipants: undefined,
     };
 
     res.json({
