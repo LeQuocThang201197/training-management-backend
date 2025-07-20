@@ -1038,10 +1038,8 @@ export const getCompetitions = async (req, res) => {
                 startDate: true,
                 endDate: true,
                 team: {
-                  select: {
-                    sport: { select: { name: true } },
-                    type: true,
-                    gender: true,
+                  include: {
+                    sport: true,
                   },
                 },
               },
@@ -1082,11 +1080,7 @@ export const getCompetitions = async (req, res) => {
         ...cc,
         concentration: {
           ...cc.concentration,
-          team: {
-            sport: cc.concentration.team.sport,
-            type: formatTeamType(cc.concentration.team.type),
-            gender: formatTeamGender(cc.concentration.team.gender),
-          },
+          team: formatTeamInfo(cc.concentration.team),
         },
       }));
 
