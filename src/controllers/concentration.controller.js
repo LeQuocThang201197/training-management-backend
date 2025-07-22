@@ -262,8 +262,7 @@ export const getConcentrations = async (req, res) => {
 
       switch (sortBy) {
         case "startDate":
-          // Sắp xếp endDate trước startDate để nhóm các đợt còn đang diễn ra liền mạch
-          return [{ endDate: order }, { startDate: order }];
+          return { startDate: order };
         case "teamName":
           return {
             team: {
@@ -273,7 +272,7 @@ export const getConcentrations = async (req, res) => {
             },
           };
         default:
-          return [{ endDate: "desc" }, { startDate: "desc" }];
+          return { startDate: "desc" };
       }
     };
 
