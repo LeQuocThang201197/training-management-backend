@@ -262,17 +262,26 @@ export const getConcentrations = async (req, res) => {
 
       switch (sortBy) {
         case "startDate":
-          return { startDate: order };
+          return [
+            { startDate: order },
+            { id: "desc" }, // Thêm id để đảm bảo sorting ổn định
+          ];
         case "teamName":
-          return {
-            team: {
-              sport: {
-                name: order,
+          return [
+            {
+              team: {
+                sport: {
+                  name: order,
+                },
               },
             },
-          };
+            { id: "desc" }, // Thêm id để đảm bảo sorting ổn định
+          ];
         default:
-          return { startDate: "desc" };
+          return [
+            { startDate: "desc" },
+            { id: "desc" }, // Thêm id để đảm bảo sorting ổn định
+          ];
       }
     };
 
