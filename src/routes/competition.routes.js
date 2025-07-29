@@ -13,7 +13,7 @@ import {
   updateCompetitionParticipants,
   getCompetitions,
   getCompetitionStats,
-  addConcentrationToCompetition,
+  addConcentrationsToCompetition,
   removeConcentrationFromCompetition,
   getAvailableConcentrations,
   getAvailableParticipants,
@@ -52,7 +52,7 @@ router.get(
 router.post(
   "/:id/concentrations",
   checkPermission("UPDATE_COMPETITION"),
-  addConcentrationToCompetition
+  addConcentrationsToCompetition
 );
 router.get(
   "/:id/available-concentrations",

@@ -1173,101 +1173,6 @@ export const getCompetitionStats = async (req, res) => {
 };
 
 // Thêm concentration vào giải đấu
-export const addConcentrationToCompetition = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { concentration_id } = req.body;
-
-    // Kiểm tra competition tồn tại
-    const competition = await prisma.competition.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!competition) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy giải đấu",
-      });
-    }
-
-    // Kiểm tra concentration tồn tại
-    const concentration = await prisma.concentration.findUnique({
-      where: { id: parseInt(concentration_id) },
-      include: {
-        team: {
-          include: {
-            sport: true,
-          },
-        },
-      },
-    });
-
-    if (!concentration) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy đợt tập trung",
-      });
-    }
-
-    // Kiểm tra xem đã liên kết chưa
-    const existingLink = await prisma.competitionConcentration.findUnique({
-      where: {
-        competition_id_concentration_id: {
-          competition_id: parseInt(id),
-          concentration_id: parseInt(concentration_id),
-        },
-      },
-    });
-
-    if (existingLink) {
-      return res.status(400).json({
-        success: false,
-        message: "Đợt tập trung này đã được liên kết với giải đấu",
-      });
-    }
-
-    // Tạo liên kết mới
-    const link = await prisma.competitionConcentration.create({
-      data: {
-        competition_id: parseInt(id),
-        concentration_id: parseInt(concentration_id),
-      },
-      include: {
-        concentration: {
-          include: {
-            team: {
-              include: {
-                sport: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    // Format response
-    const formattedLink = {
-      ...link,
-      concentration: {
-        ...link.concentration,
-        team: formatTeamInfo(link.concentration.team),
-        room: MANAGEMENT_ROOMS[link.concentration.room],
-      },
-    };
-
-    res.status(201).json({
-      success: true,
-      message: "Thêm đợt tập trung vào giải đấu thành công",
-      data: formattedLink,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server",
-      error: error.message,
-    });
-  }
-};
 
 // Xóa concentration khỏi giải đấu
 export const removeConcentrationFromCompetition = async (req, res) => {
@@ -1551,6 +1456,123 @@ export const getAvailableParticipants = async (req, res) => {
         limit: parseInt(limit),
         total,
         totalPages: Math.ceil(total / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+// Thêm nhiều concentrations vào giải đấu
+export const addConcentrationsToCompetition = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { concentrationIds } = req.body; // Mảng các concentration IDs
+
+    // Kiểm tra competition tồn tại
+    const competition = await prisma.competition.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!competition) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy giải đấu",
+      });
+    }
+
+    const results = await Promise.all(
+      concentrationIds.map(async (concentrationId) => {
+        try {
+          // Kiểm tra concentration tồn tại
+          const concentration = await prisma.concentration.findUnique({
+            where: { id: parseInt(concentrationId) },
+            include: {
+              team: {
+                include: {
+                  sport: true,
+                },
+              },
+            },
+          });
+
+          if (!concentration) {
+            return {
+              concentrationId,
+              error: "Không tìm thấy đợt tập trung",
+            };
+          }
+
+          // Kiểm tra xem đã liên kết chưa
+          const existingLink = await prisma.competitionConcentration.findUnique(
+            {
+              where: {
+                competition_id_concentration_id: {
+                  competition_id: parseInt(id),
+                  concentration_id: parseInt(concentrationId),
+                },
+              },
+            }
+          );
+
+          if (existingLink) {
+            return {
+              concentrationId,
+              error: "Đợt tập trung này đã được liên kết với giải đấu",
+            };
+          }
+
+          // Tạo liên kết mới
+          const link = await prisma.competitionConcentration.create({
+            data: {
+              competition_id: parseInt(id),
+              concentration_id: parseInt(concentrationId),
+            },
+            include: {
+              concentration: {
+                include: {
+                  team: {
+                    include: {
+                      sport: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          return {
+            ...link,
+            concentration: {
+              ...link.concentration,
+              team: formatTeamInfo(link.concentration.team),
+              room: MANAGEMENT_ROOMS[link.concentration.room],
+            },
+          };
+        } catch (error) {
+          return {
+            concentrationId,
+            error: error.message,
+          };
+        }
+      })
+    );
+
+    // Phân loại kết quả
+    const successful = results.filter((result) => !result.error);
+    const failed = results.filter((result) => result.error);
+
+    res.status(201).json({
+      success: true,
+      message: `Đã thêm ${successful.length} đợt tập trung vào giải đấu${
+        failed.length > 0 ? `, ${failed.length} lỗi` : ""
+      }`,
+      data: {
+        successful,
+        failed,
       },
     });
   } catch (error) {
