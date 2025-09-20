@@ -74,14 +74,14 @@ export const login = (req, res, next) => {
       }
 
       // Get user's roles and permissions
-      const userRoles = await prisma.userRole.findMany({
+      const userRoles = await prisma.UserRole.findMany({
         where: { user_id: user.id },
         include: {
-          role: {
+          Role: {
             include: {
-              permissions: {
+              RolePermission: {
                 include: {
-                  permission: true,
+                  Permission: true,
                 },
               },
             },
@@ -98,11 +98,11 @@ export const login = (req, res, next) => {
         data: {
           user: {
             ...userWithoutPassword,
-            roles: userRoles.map((ur) => ur.role.name),
+            roles: userRoles.map((ur) => ur.Role.name),
             permissions: [
               ...new Set(
                 userRoles.flatMap((ur) =>
-                  ur.role.permissions.map((rp) => rp.permission.name)
+                  ur.Role.RolePermission.map((rp) => rp.Permission.name)
                 )
               ),
             ],
@@ -282,14 +282,14 @@ export const logout = (req, res) => {
 export const verifyAuth = async (req, res) => {
   if (req.isAuthenticated()) {
     // Get user's roles and permissions
-    const userRoles = await prisma.userRole.findMany({
+    const userRoles = await prisma.UserRole.findMany({
       where: { user_id: req.user.id },
       include: {
-        role: {
+        Role: {
           include: {
-            permissions: {
+            RolePermission: {
               include: {
-                permission: true,
+                Permission: true,
               },
             },
           },
@@ -305,11 +305,11 @@ export const verifyAuth = async (req, res) => {
       data: {
         user: {
           ...userWithoutPassword,
-          roles: userRoles.map((ur) => ur.role.name),
+          roles: userRoles.map((ur) => ur.Role.name),
           permissions: [
             ...new Set(
               userRoles.flatMap((ur) =>
-                ur.role.permissions.map((rp) => rp.permission.name)
+                ur.Role.RolePermission.map((rp) => rp.Permission.name)
               )
             ),
           ],
@@ -338,12 +338,12 @@ export const assignRole = async (req, res) => {
     }
 
     // Delete existing user roles first
-    await prisma.userRole.deleteMany({
+    await prisma.UserRole.deleteMany({
       where: { user_id: userId },
     });
 
     // Create new user roles
-    await prisma.userRole.createMany({
+    await prisma.UserRole.createMany({
       data: roles.map((roleId) => ({
         user_id: userId,
         role_id: roleId,
@@ -354,13 +354,13 @@ export const assignRole = async (req, res) => {
     const updatedUser = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        roles: {
+        UserRole: {
           include: {
-            role: {
+            Role: {
               include: {
-                permissions: {
+                RolePermission: {
                   include: {
-                    permission: true,
+                    Permission: true,
                   },
                 },
               },

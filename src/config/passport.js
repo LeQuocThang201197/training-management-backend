@@ -15,13 +15,13 @@ passport.use(
         const user = await prisma.user.findUnique({
           where: { email },
           include: {
-            roles: {
+            UserRole: {
               include: {
-                role: {
+                Role: {
                   include: {
-                    permissions: {
+                    RolePermission: {
                       include: {
-                        permission: true,
+                        Permission: true,
                       },
                     },
                   },
@@ -62,13 +62,13 @@ passport.deserializeUser(async (id, done) => {
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
-        roles: {
+        UserRole: {
           include: {
-            role: {
+            Role: {
               include: {
-                permissions: {
+                RolePermission: {
                   include: {
-                    permission: true,
+                    Permission: true,
                   },
                 },
               },
