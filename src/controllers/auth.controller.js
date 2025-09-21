@@ -116,11 +116,11 @@ export const login = (req, res, next) => {
 // New role management functions
 export const getAllRoles = async (req, res) => {
   try {
-    const roles = await prisma.role.findMany({
+    const roles = await prisma.Role.findMany({
       include: {
-        permissions: {
+        RolePermission: {
           include: {
-            permission: true,
+            Permission: true,
           },
         },
       },
@@ -137,7 +137,7 @@ export const getAllRoles = async (req, res) => {
 
 export const getAllPermissions = async (req, res) => {
   try {
-    const permissions = await prisma.permission.findMany();
+    const permissions = await prisma.Permission.findMany();
     res.json({ success: true, data: permissions });
   } catch (error) {
     res.status(500).json({
@@ -152,7 +152,7 @@ export const createRole = async (req, res) => {
   try {
     const { name, description } = req.body;
 
-    const role = await prisma.role.create({
+    const role = await prisma.Role.create({
       data: {
         name,
         description,
@@ -179,16 +179,16 @@ export const updateRole = async (req, res) => {
     const { name, description } = req.body;
 
     // Just update role basic info without touching permissions
-    const role = await prisma.role.update({
+    const role = await prisma.Role.update({
       where: { id: parseInt(id) },
       data: {
         name,
         description,
       },
       include: {
-        permissions: {
+        RolePermission: {
           include: {
-            permission: true,
+            Permission: true,
           },
         },
       },
@@ -223,15 +223,15 @@ export const updateRolePermissions = async (req, res) => {
     }
 
     // Delete existing permissions
-    await prisma.rolePermission.deleteMany({
+    await prisma.RolePermission.deleteMany({
       where: { role_id: parseInt(id) },
     });
 
     // Add new permissions
-    const role = await prisma.role.update({
+    const role = await prisma.Role.update({
       where: { id: parseInt(id) },
       data: {
-        permissions: {
+        RolePermission: {
           createMany: {
             data: permissions.map((permissionId) => ({
               permission_id: permissionId,
@@ -240,9 +240,9 @@ export const updateRolePermissions = async (req, res) => {
         },
       },
       include: {
-        permissions: {
+        RolePermission: {
           include: {
-            permission: true,
+            Permission: true,
           },
         },
       },
@@ -392,13 +392,13 @@ export const getUsers = async (req, res) => {
         email: true,
         name: true,
         createdAt: true,
-        roles: {
+        UserRole: {
           include: {
-            role: {
+            Role: {
               include: {
-                permissions: {
+                RolePermission: {
                   include: {
-                    permission: true,
+                    Permission: true,
                   },
                 },
               },
@@ -429,17 +429,17 @@ export const deleteRole = async (req, res) => {
     const { id } = req.params;
 
     // First delete all role permissions
-    await prisma.rolePermission.deleteMany({
+    await prisma.RolePermission.deleteMany({
       where: { role_id: parseInt(id) },
     });
 
     // Then delete all user roles
-    await prisma.userRole.deleteMany({
+    await prisma.UserRole.deleteMany({
       where: { role_id: parseInt(id) },
     });
 
     // Finally delete the role
-    const role = await prisma.role.delete({
+    const role = await prisma.Role.delete({
       where: { id: parseInt(id) },
     });
 

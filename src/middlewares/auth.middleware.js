@@ -12,14 +12,14 @@ export const isAuthenticated = (req, res, next) => {
 
 // Helper function to check user permissions
 const getUserPermissions = async (userId) => {
-  const userRoles = await prisma.userRole.findMany({
+  const userRoles = await prisma.UserRole.findMany({
     where: { user_id: userId },
     include: {
-      role: {
+      Role: {
         include: {
-          permissions: {
+          RolePermission: {
             include: {
-              permission: true,
+              Permission: true,
             },
           },
         },
@@ -31,7 +31,7 @@ const getUserPermissions = async (userId) => {
   const permissions = [
     ...new Set(
       userRoles.flatMap((ur) =>
-        ur.role.permissions.map((rp) => rp.permission.name)
+        ur.Role.RolePermission.map((rp) => rp.Permission.name)
       )
     ),
   ];

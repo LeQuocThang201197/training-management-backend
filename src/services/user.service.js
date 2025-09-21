@@ -4,7 +4,7 @@ export const createUser = async (userData) => {
   return await prisma.user.create({
     data: userData,
     include: {
-      profile: true,
+      Profile: true,
     },
   });
 };
@@ -12,7 +12,7 @@ export const createUser = async (userData) => {
 export const getUsers = async () => {
   return await prisma.user.findMany({
     include: {
-      profile: true,
+      Profile: true,
       courses: true,
       teaching: true,
     },
